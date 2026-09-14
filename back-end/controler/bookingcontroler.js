@@ -6,11 +6,11 @@ import { Flight } from "../model/flightmodel.js";
 export const createBooking = async (req, res)=>{
     try {
         
-        const {flightNumber, passengers, selectedSeats} = req.body;
+        const {FLightNumber, passengers, selectedSeats} = req.body;
 
         // flight number find 
 
-        if(!flightNumber){
+        if(!FLightNumber){
             return res.status(400).json({
                 status: false,
                 message: "Flight Number is required!"
@@ -31,7 +31,7 @@ export const createBooking = async (req, res)=>{
             });
         }
 
-        const flight = await Flight.findOne({flightNumber});
+        const flight = await Flight.findOne({FLightNumber});
         
         if (!flight) {
             return res.status(404).json({

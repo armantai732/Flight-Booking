@@ -3,9 +3,9 @@ import { Flight } from "../model/flightmodel.js"
 
 export const addFlight = async (req, res)=>{
     try {
-        const {airline, flightNumber, from, to, departureTime, arrivalTime, date, price} = req.body
+        const {airline, FLightNumber , Aircraft, image, from, to, departureTime, arrivalTime, Baggage,  date, price, seatRows} = req.body
         const seats = [];
-        const ExitsFlight = await Flight.findOne({flightNumber});
+        const ExitsFlight = await Flight.findOne({FLightNumber});
 
         if(ExitsFlight){
             return res.status(400).json({
@@ -14,9 +14,9 @@ export const addFlight = async (req, res)=>{
             })
         };
 
-        const seatLetter = ["A", "B", "C", "D"];
+        const seatLetter = ["A", "B", "C", "D", "E", "F"];
 
-        for(let row = 1; row<=30; row++){
+        for(let row = 1; row<=seatRows; row++){
             for(let letter of seatLetter){
                 seats.push({
                     seatNumber : `${row}${letter}`,
@@ -25,7 +25,7 @@ export const addFlight = async (req, res)=>{
             }
         }
 
-        const NewFlight = await Flight.create({airline, flightNumber, from, to, departureTime, arrivalTime, date, price, seats});
+        const NewFlight = await Flight.create({airline,FLightNumber, Aircraft, image, from, to, departureTime, arrivalTime, Baggage, date, price, seats});
 
         return res.status(201).json({
             status: true,
@@ -69,9 +69,9 @@ export const getFlight = async (req, res)=>{
 export const getSingleFlight = async (req, res) => {
     try {
         
-        const { flightNumber } = req.params;
+        const { FLightNumber } = req.params;
 
-        const flight = await Flight.findOne({flightNumber});
+        const flight = await Flight.findOne({FLightNumber});
 
 
         if (!flight) {
@@ -99,9 +99,9 @@ export const getSingleFlight = async (req, res) => {
 export const updateFlight = async (req, res)=>{
     try {
         const {id} = req.params;
-        const {airline, from, to, departureTime, arrivalTime, date, price, seats} = req.body;
+        const {airline, Aircraft, FLightNumber, image, from, to, departureTime, arrivalTime, date, price, seats} = req.body;
 
-        const ExitsFlight = await Flight.findByIdAndUpdate(id, {airline, from, to, departureTime, arrivalTime, date, price, seats}, {returnDocument: "after",});
+        const ExitsFlight = await Flight.findByIdAndUpdate(id, {airline,FLightNumber, Aircraft, image,  from, to, departureTime, arrivalTime, date, price, seats}, {returnDocument: "after",});
 
         if(!ExitsFlight){
             return res.status(404).json({

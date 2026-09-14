@@ -11,9 +11,26 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
+    mobile : {
+       type: String,
+        required: true 
+    },
     password: {
         type: String,
         required: true
+    },
+    date: {
+        type : String,
+        default: null
+    },
+    gender: {
+        type: String,
+        default: null
+    },
+    role: {
+        type: String,
+        enum: ['admin', 'user'],
+        default: 'user'
     }
 }, {timestamps: true})
 

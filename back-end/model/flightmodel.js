@@ -18,8 +18,16 @@ const flightSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    flightNumber: {
+    FLightNumber: {
         type: Number,
+        required: true
+    },
+    Aircraft: {
+        type: String,
+        required: true
+    },
+    image: {
+        type: String,
         required: true
     },
     from: {
@@ -36,6 +44,10 @@ const flightSchema = new mongoose.Schema({
     },
     arrivalTime: {
         type: String,
+        required: true
+    },
+    Baggage: {
+        type: Number,
         required: true
     },
     date: {

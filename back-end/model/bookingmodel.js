@@ -4,12 +4,12 @@ import mongoose from "mongoose";
 const bookingSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: "user",
         required: true
     },
     flight: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Flight",
+        ref: "flight",
         required: true
     },
     passengers: [
@@ -23,10 +23,6 @@ const bookingSchema = new mongoose.Schema({
                 required: true,
             },
             gender: {
-                type: String,
-                required: true
-            },
-            passportNumber : {
                 type: String,
                 required: true
             }
