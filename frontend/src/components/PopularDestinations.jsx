@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { GetFlight } from '../api/api';
+import { useNavigate } from 'react-router-dom';
 
 export default function PopularDestinations() {
   // ૧. Popular Destinations Data
-  const destinations = [
-    { name: 'Mumbai', country: 'India', price: '₹4,299', image: 'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=500&auto=format&fit=crop' },
-    { name: 'Delhi', country: 'India', price: '₹3,999', image: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=500&auto=format&fit=crop' },
-    { name: 'Goa', country: 'India', price: '₹5,499', image: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=500&auto=format&fit=crop' },
-    { name: 'Dubai', country: 'UAE', price: '₹12,999', image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=500&auto=format&fit=crop' },
-    { name: 'London', country: 'UK', price: '₹28,999', image: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=500&auto=format&fit=crop' },
-    { name: 'Paris', country: 'France', price: '₹32,499', image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=500&auto=format&fit=crop' },
-  ];
+  // const destinations = [
+  //   { name: 'Mumbai', country: 'India', price: '₹4,299', image: 'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=500&auto=format&fit=crop' },
+  //   { name: 'Delhi', country: 'India', price: '₹3,999', image: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=500&auto=format&fit=crop' },
+  //   { name: 'Goa', country: 'India', price: '₹5,499', image: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=500&auto=format&fit=crop' },
+  //   { name: 'Dubai', country: 'UAE', price: '₹12,999', image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=500&auto=format&fit=crop' },
+  //   { name: 'London', country: 'UK', price: '₹28,999', image: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=500&auto=format&fit=crop' },
+  //   { name: 'Paris', country: 'France', price: '₹32,499', image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=500&auto=format&fit=crop' },
+  // ];
 
   // ૨. Small Offers Data
   const smallOffers = [
@@ -22,6 +23,7 @@ export default function PopularDestinations() {
     const [flights, setFlights] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const navigate = useNavigate();
 
   useEffect(() => {
       const fetchFlights = async () => {
@@ -60,7 +62,7 @@ export default function PopularDestinations() {
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Popular Destinations</h2>
               <p className="text-xs sm:text-sm text-gray-500 mt-1">Explore top destinations at the best prices</p>
             </div>
-            <a href="#" className="text-xs sm:text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+            <a className="text-xs sm:text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
               View All ➔
             </a>
           </div>
@@ -68,7 +70,7 @@ export default function PopularDestinations() {
           {/* Cards Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {flights.map((item, index) => (
-              <div key={index} className="bg-white rounded-xl overflow-hidden border border-gray-200/80 shadow-sm hover:shadow-md transition cursor-pointer group">
+              <div onClick={()=>navigate("/flights")} key={index} className="bg-white rounded-xl overflow-hidden border border-gray-200/80 shadow-sm hover:shadow-md transition cursor-pointer group">
                 <div className="h-28 overflow-hidden">
                   <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
                 </div>

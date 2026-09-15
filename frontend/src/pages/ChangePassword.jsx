@@ -32,43 +32,67 @@ export default function ChangePassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setMessage({ type: '', text: '' });
 
+    if (!OldPassword || !newPassword || !confirmPassword) {
+      setMessage({
+        type: 'error',
+        text: 'All fields are required!'
+      });
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
-      setMessage({ type: 'error', text: 'New password and confirm password do not match!' });
+      setMessage({
+        type: 'error',
+        text: 'New password and confirm password do not match!'
+      });
       return;
     }
 
     if (newPassword.length < 8) {
-      setMessage({ type: 'error', text: 'Password must be at least 8 characters long.' });
+      setMessage({
+        type: 'error',
+        text: 'Password must be at least 8 characters long.'
+      });
       return;
     }
 
     setLoading(true);
 
     try {
-      if (typeof changePassword === 'function') {
-        const res = await changePassword({
-          OldPassword,
-          newPassword,
+      const res = await changePassword({
+        oldPassword: OldPassword,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword
+      });
+
+
+      if (res?.success || res?.status) {
+        setMessage({
+          type: 'success',
+          text: res.message || 'Password updated successfully!'
         });
-        if (res?.status) {
-          setMessage({ type: 'success', text: 'Password updated successfully!' });
-          setOldPassword('');
-          setNewPassword('');
-          setConfirmPassword('');
-        } else {
-          setMessage({ type: 'error', text: res?.message || 'Failed to update password.' });
-        }
-      } else {
-        // Dummy Success Response
-        setMessage({ type: 'success', text: 'Password updated successfully!' });
+
         setOldPassword('');
         setNewPassword('');
         setConfirmPassword('');
+      } else {
+        setMessage({
+          type: 'error',
+          text: res?.message || 'Failed to update password.'
+        });
       }
+
     } catch (err) {
-      setMessage({ type: 'error', text: 'Something went wrong. Please try again.' });
+      console.error("Change Password Error:", err);
+
+      setMessage({
+        type: 'error',
+        text: err.message || 'Something went wrong. Please try again.'
+      });
+
     } finally {
       setLoading(false);
     }
@@ -98,11 +122,10 @@ export default function ChangePassword() {
                     setActiveTab(item.name);
                     navigate(item.path);
                   }}
-                  className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-semibold transition duration-200 ${
-                    activeTab === item.name
-                      ? 'bg-blue-50 text-blue-600 font-bold'
-                      : 'text-slate-600 hover:bg-slate-50'
-                  }`}
+                  className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-semibold transition duration-200 ${activeTab === item.name
+                    ? 'bg-blue-50 text-blue-600 font-bold'
+                    : 'text-slate-600 hover:bg-slate-50'
+                    }`}
                 >
                   <span className="text-base">{item.icon}</span>
                   <span>{item.name}</span>
@@ -156,7 +179,7 @@ export default function ChangePassword() {
 
             {/* CHANGE PASSWORD CARD FORM */}
             <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-100 shadow-sm space-y-6">
-              
+
               {/* Header Title with Lock Icon */}
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0">
@@ -172,16 +195,15 @@ export default function ChangePassword() {
 
               {/* Alert Message */}
               {message.text && (
-                <div className={`p-3 rounded-xl text-xs font-semibold ${
-                  message.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'
-                }`}>
+                <div className={`p-3 rounded-xl text-xs font-semibold ${message.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'
+                  }`}>
                   {message.text}
                 </div>
               )}
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-5 max-w-3xl">
-                
+
                 {/* Current Password */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">

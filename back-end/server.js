@@ -1,11 +1,14 @@
-import express from 'express'
-import { DBConnect } from './config/db.js';
-import dotenv from 'dotenv';
-import routes from './router/router.js';
-import cors from 'cors';
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+
 dotenv.config();
 
+const { DBConnect } = await import("./config/db.js");
+const { default: routes } = await import("./router/router.js");
+
 const app = express();
+
 app.use(cors({
     origin: "http://localhost:5173",
     credentials: true
@@ -17,6 +20,6 @@ await DBConnect();
 
 app.use("/api", routes);
 
-app.listen(process.env.PORT, ()=>{
+app.listen(process.env.PORT || 8080, () => {
     console.log("Server Running on 8080");
-})
+});

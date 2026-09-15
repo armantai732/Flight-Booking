@@ -171,17 +171,17 @@ export const UpdateProfile = async (req, res) => {
 
 export const changePassword = async (req, res) => {
     try {
-        const { oldPassword, newPassword, confirmPassword } = req.body;
 
-        // 1. Check all fields
-        if (!oldPassword || !newPassword || !confirmPassword) {
+        const { password, newPassword, confirmPassword } = req.body;
+
+
+        if (!password || !newPassword || !confirmPassword) {
             return res.status(400).json({
                 success: false,
                 message: "All fields are required"
             });
         }
 
-        // 2. Check new password and confirm password
         if (newPassword !== confirmPassword) {
             return res.status(400).json({
                 success: false,
@@ -189,7 +189,13 @@ export const changePassword = async (req, res) => {
             });
         }
 
-        // 3. Get logged-in user
+        if (newPassword.length < 8) {
+            return res.status(400).json({
+                success: false,
+                message: "Password must be at least 8 characters"
+            });
+        }
+
         const userId = req.user.id;
 
         const user = await User.findById(userId);
@@ -201,9 +207,8 @@ export const changePassword = async (req, res) => {
             });
         }
 
-        // 4. Compare old password with database password
         const isPasswordCorrect = await bcrypt.compare(
-            oldPassword,
+            password,
             user.password
         );
 
@@ -214,20 +219,20 @@ export const changePassword = async (req, res) => {
             });
         }
 
-        // 5. Hash new password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        // 6. Update password
         user.password = hashedPassword;
 
         await user.save();
 
         return res.status(200).json({
             success: true,
+            status: true,
             message: "Password changed successfully"
         });
 
     } catch (error) {
+
         console.error("Change Password Error:", error);
 
         return res.status(500).json({

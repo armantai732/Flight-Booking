@@ -154,7 +154,7 @@ export default function AdminSidebar() {
 
         <button
           type="button"
-          onClick={() => navigate("/admin/users")}
+          // onClick={() => navigate("/admin/users")}
           className={` w-full flex items-center gap-3 px-4 py-3 rounded-xl transition
 
             ${isUsersActive
@@ -181,7 +181,7 @@ export default function AdminSidebar() {
 
         <button
           type="button"
-          onClick={() => navigate("/admin/settings")}
+          // onClick={() => navigate("/admin/settings")}
           className={` w-full flex items-center gap-3 px-4 py-3 rounded-xl transition
 
             ${isSettingsActive

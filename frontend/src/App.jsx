@@ -32,12 +32,14 @@ function AppContent() {
 
   // Admin ke saare pages
   const isAdminPage = location.pathname.startsWith('/admin');
+  const bookingstatus = location.pathname.startsWith('/bookingstatus');
+
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between select-none">
 
       {/* Navbar - Admin pages par hide */}
-      {!isAdminPage && <Navbar />}
+      {!isAdminPage && !bookingstatus && <Navbar />}
 
       {/* Main Content */}
       <main className="flex-grow">
@@ -70,7 +72,7 @@ function AppContent() {
       </main>
 
       {/* Footer - Admin pages par hide */}
-      {!isAdminPage && <Footer />}
+      {!isAdminPage && !bookingstatus &&  <Footer />}
 
     </div>
   );

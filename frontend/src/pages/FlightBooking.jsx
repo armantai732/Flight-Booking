@@ -64,6 +64,9 @@ export default function FlightBooking() {
       state: {
         flight,
         selectedSeat,
+        price,
+        taxes,
+        seatExtra,
         totalAmount,
       },
     });
@@ -81,13 +84,12 @@ export default function FlightBooking() {
         key={seatCode}
         disabled={isBooked}
         onClick={() => handleSeatClick(seatCode)}
-        className={`w-8 h-8 rounded-lg text-[10px] font-bold transition flex items-center justify-center ${
-          isBooked
+        className={`w-8 h-8 rounded-lg text-[10px] font-bold transition flex items-center justify-center ${isBooked
             ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-200'
             : isSelected
-            ? 'bg-blue-600 text-white shadow-md'
-            : 'bg-white border border-gray-200 text-gray-600 hover:border-blue-400'
-        }`}
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'bg-white border border-gray-200 text-gray-600 hover:border-blue-400'
+          }`}
       >
         {seatCode}
       </button>
@@ -307,11 +309,10 @@ export default function FlightBooking() {
               <button
                 onClick={handleConfirmSeat}
                 disabled={!selectedSeat}
-                className={`w-full font-semibold text-xs py-3 rounded-xl transition duration-200 ${
-                  selectedSeat
+                className={`w-full font-semibold text-xs py-3 rounded-xl transition duration-200 ${selectedSeat
                     ? 'border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white'
                     : 'border border-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 Confirm Seat
               </button>

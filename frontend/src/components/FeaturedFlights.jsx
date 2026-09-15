@@ -70,7 +70,7 @@ export default function FeaturedFlights() {
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Featured Flights</h2>
             <p className="text-xs sm:text-sm text-gray-500 mt-0.5">Top selling flights from India</p>
           </div>
-          <a href="#" className="text-xs sm:text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+          <a className="text-xs sm:text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
             View All Flights ➔
           </a>
         </div>

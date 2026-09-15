@@ -1,51 +1,154 @@
+import cloudinary from "../config/cloudinary.js";
 import { Flight } from "../model/flightmodel.js"
 
-
-export const addFlight = async (req, res)=>{
+export const addFlight = async (req, res) => {
     try {
-        const {airline, FLightNumber , Aircraft, image, from, to, departureTime, arrivalTime, Baggage,  date, price, seatRows} = req.body
-        const seats = [];
-        const ExitsFlight = await Flight.findOne({FLightNumber});
 
-        if(ExitsFlight){
+        const {
+            airline,
+            FLightNumber,
+            Aircraft,
+            from,
+            to,
+            departureTime,
+            arrivalTime,
+            Baggage,
+            date,
+            price,
+            seatRows
+        } = req.body;
+
+
+        // Image check
+        if (!req.file) {
+            return res.status(400).json({
+                status: false,
+                message: "Flight image is required"
+            });
+        }
+
+
+        // Check duplicate flight
+        const ExitsFlight = await Flight.findOne({ FLightNumber });
+
+        if (ExitsFlight) {
             return res.status(400).json({
                 status: false,
                 message: "Flight Already Declare"
-            })
-        };
-
-        const seatLetter = ["A", "B", "C", "D", "E", "F"];
-
-        for(let row = 1; row<=seatRows; row++){
-            for(let letter of seatLetter){
-                seats.push({
-                    seatNumber : `${row}${letter}`,
-                    status : "available",
-                })
-            }
+            });
         }
 
-        const NewFlight = await Flight.create({airline,FLightNumber, Aircraft, image, from, to, departureTime, arrivalTime, Baggage, date, price, seats});
+
+        // Upload image to Cloudinary
+        const uploadResult = await new Promise((resolve, reject) => {
+
+            const stream = cloudinary.uploader.upload_stream(
+                {
+                    folder: "flights"
+                },
+                (error, result) => {
+
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve(result);
+                    }
+
+                }
+            );
+
+            stream.end(req.file.buffer);
+
+        });
+
+        // Create seats
+        const seats = [];
+
+        const seatLetter = [
+            "A",
+            "B",
+            "C",
+            "D",
+            "E",
+            "F"
+        ];
+
+
+        for (let row = 1; row <= Number(seatRows); row++) {
+
+            for (let letter of seatLetter) {
+
+                seats.push({
+                    seatNumber: `${row}${letter}`,
+                    status: "available"
+                });
+
+            }
+
+        }
+
+
+        // Create Flight
+        const NewFlight = await Flight.create({
+
+            airline,
+
+            FLightNumber,
+
+            Aircraft,
+
+            image: uploadResult.secure_url,
+
+            from,
+
+            to,
+
+            departureTime,
+
+            arrivalTime,
+
+            Baggage: Number(Baggage),
+
+            date,
+
+            price,
+
+            seats
+
+        });
+
 
         return res.status(201).json({
+
             status: true,
-            message: "Flight Declare Succesfully!",
+
+            message: "Flight Declare Successfully!",
+
             Flight: NewFlight
-        })
+
+        });
+
 
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
-}
 
-export const getFlight = async (req, res)=>{
+        console.error("Add Flight Error:", error);
+
+        return res.status(500).json({
+
+            status: false,
+
+            message: error.message
+
+        });
+
+    }
+};
+
+export const getFlight = async (req, res) => {
     try {
         const ExitsFlight = await Flight.find();
 
-        if(!ExitsFlight){
+        if (!ExitsFlight) {
             return res.status(404).json({
                 status: false,
                 message: "Flight Not Found"
@@ -68,10 +171,10 @@ export const getFlight = async (req, res)=>{
 
 export const getSingleFlight = async (req, res) => {
     try {
-        
+
         const { FLightNumber } = req.params;
 
-        const flight = await Flight.findOne({FLightNumber});
+        const flight = await Flight.findOne({ FLightNumber });
 
 
         if (!flight) {
@@ -96,14 +199,14 @@ export const getSingleFlight = async (req, res) => {
     }
 }
 
-export const updateFlight = async (req, res)=>{
+export const updateFlight = async (req, res) => {
     try {
-        const {id} = req.params;
-        const {airline, Aircraft, FLightNumber, image, from, to, departureTime, arrivalTime, date, price, seats} = req.body;
+        const { id } = req.params;
+        const { airline, Aircraft, FLightNumber, image, from, to, departureTime, arrivalTime, date, price, seats } = req.body;
 
-        const ExitsFlight = await Flight.findByIdAndUpdate(id, {airline,FLightNumber, Aircraft, image,  from, to, departureTime, arrivalTime, date, price, seats}, {returnDocument: "after",});
+        const ExitsFlight = await Flight.findByIdAndUpdate(id, { airline, FLightNumber, Aircraft, image, from, to, departureTime, arrivalTime, date, price, seats }, { returnDocument: "after", });
 
-        if(!ExitsFlight){
+        if (!ExitsFlight) {
             return res.status(404).json({
                 status: false,
                 message: "Flight Not Found"
@@ -113,7 +216,7 @@ export const updateFlight = async (req, res)=>{
         return res.status(200).json({
             status: true,
             message: "Flight Update Succesfully!",
-            Flight : ExitsFlight
+            Flight: ExitsFlight
         })
 
     } catch (error) {
@@ -124,13 +227,13 @@ export const updateFlight = async (req, res)=>{
     }
 }
 
-export const delateFlight = async (req, res)=>{
+export const delateFlight = async (req, res) => {
     try {
-        const {id} = req.params;
+        const { id } = req.params;
 
         const ExitsFlight = await Flight.findByIdAndDelete(id);
 
-        if(!ExitsFlight){
+        if (!ExitsFlight) {
             return res.status(404).json({
                 status: false,
                 message: "Flight Not Found"
@@ -140,7 +243,7 @@ export const delateFlight = async (req, res)=>{
         return res.status(200).json({
             status: true,
             message: "Flight Remove Succesfully!",
-            Flight : ExitsFlight
+            Flight: ExitsFlight
         })
 
     } catch (error) {

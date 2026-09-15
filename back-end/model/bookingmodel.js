@@ -15,11 +15,11 @@ const bookingSchema = new mongoose.Schema({
     passengers: [
         {
             name: {
-                type : String,
+                type: String,
                 required: true,
             },
             age: {
-                type : String,
+                type: String,
                 required: true,
             },
             gender: {
@@ -28,32 +28,47 @@ const bookingSchema = new mongoose.Schema({
             }
         }
     ],
-    selectedSeats : [
+    selectedSeats: [
         {
-            seatId : {
+            seatId: {
                 type: mongoose.Schema.Types.ObjectId,
                 required: true
             },
-            seatNumber : {
+            seatNumber: {
                 type: String,
                 required: true
             }
         }
     ],
+    baseFare: {
+        type: Number,
+        required: true
+    },
+
+    taxes: {
+        type: Number,
+        required: true
+    },
+
+    seatExtra: {
+        type: Number,
+        default: 0
+    },
+
     totalAmount: {
-        type : Number,
-        required: true,
+        type: Number,
+        required: true
     },
     paymentStatus: {
-        type : String,
+        type: String,
         enum: ["Pending", "Paid", "Failed"],
         default: "Pending"
     },
     bookingStatus: {
-        type : String,
+        type: String,
         enum: ["Confirmed", "Cancelled", "Pending"],
         default: "Pending"
     }
-}, {timestamps: true})
+}, { timestamps: true })
 
 export const Booking = mongoose.model("Booking", bookingSchema);

@@ -1,65 +1,130 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
+import { AddFlightAdmin } from '../api/api';
 
 export default function AddFlight() {
   const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState('Add Flight');
-
+  const [imageFile, setImageFile] = useState(null);
   // Form State with Preview sync
-  const [formData, setFormData] = useState({
-    airline: 'IndiGo',
-    flightNumber: '6E 215',
-    aircraft: 'Airbus A320',
-    image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=600&q=80',
-    from: 'Delhi (DEL)',
-    to: 'Mumbai (BOM)',
-    departureTime: '14:30',
-    arrivalTime: '17:45',
-    baggage: '7',
-    date: '2026-09-15',
-    price: '4,299',
-    seatRows: '10',
+  const [form, setform] = useState({
+    airline: '',
+    FLightNumber: '',
+    Aircraft: '',
+    image: '',
+    from: '',
+    to: '',
+    departureTime: '',
+    arrivalTime: '',
+    Baggage: '',
+    date: '',
+    price: '',
+    seatRows: '',
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setform((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
+
     if (file) {
-      setFormData((prev) => ({ ...prev, image: URL.createObjectURL(file) }));
+      setImageFile(file);
+
+      // Sirf preview ke liye blob URL
+      setform((prev) => ({
+        ...prev,
+        image: URL.createObjectURL(file)
+      }));
     }
   };
 
   const handleReset = () => {
-    setFormData({
+    setform({
       airline: '',
-      flightNumber: '',
-      aircraft: '',
-      image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=600&q=80',
+      FLightNumber: '',
+      Aircraft: '',
+      image: '',
       from: '',
       to: '',
       departureTime: '',
       arrivalTime: '',
-      baggage: '',
+      Baggage: '',
       date: '',
       price: '',
       seatRows: '',
     });
+
+    setImageFile(null);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Flight Added:', formData);
-    alert('Flight added successfully!');
+
+    try {
+
+      if (!imageFile) {
+        alert("Please select flight image");
+        return;
+      }
+
+      const formData = new FormData();
+
+      formData.append("airline", form.airline);
+      formData.append("FLightNumber", form.FLightNumber);
+      formData.append("Aircraft", form.Aircraft);
+
+      // IMPORTANT:
+      // blob URL nahi, actual File bhejna hai
+      formData.append("image", imageFile);
+
+      formData.append("from", form.from);
+      formData.append("to", form.to);
+      formData.append("departureTime", form.departureTime);
+      formData.append("arrivalTime", form.arrivalTime);
+      formData.append("Baggage", form.Baggage);
+      formData.append("date", form.date);
+      formData.append("price", form.price);
+      formData.append("seatRows", form.seatRows);
+
+      const res = await AddFlightAdmin(formData);
+
+      if (res.status) {
+        alert(res.message);
+
+        setform({
+          airline: '',
+          FLightNumber: '',
+          Aircraft: '',
+          image: '',
+          from: '',
+          to: '',
+          departureTime: '',
+          arrivalTime: '',
+          Baggage: '',
+          date: '',
+          price: '',
+          seatRows: '',
+        });
+
+        setImageFile(null);
+
+      } else {
+        alert(res.message);
+      }
+
+    } catch (error) {
+      console.log("Add Flight Error:", error);
+      alert(error.message || "Failed to add flight");
+    }
   };
 
   return (
     <div className="flex h-screen bg-[#f4f7fb] font-sans overflow-hidden">
-      
+
       {/* 1. LEFT SIDEBAR */}
       <aside >
         <AdminSidebar />
@@ -67,12 +132,12 @@ export default function AddFlight() {
 
       {/* RIGHT MAIN CONTAINER */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        
+
 
 
         {/* PAGE CONTENT */}
         <main className="p-8 space-y-6">
-          
+
           {/* Title Header */}
           <div>
             <h1 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
@@ -84,10 +149,10 @@ export default function AddFlight() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
+
             {/* 2. FORM SECTION (7 COLS) */}
             <form onSubmit={handleSubmit} className="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4 text-xs">
-              
+
               {/* Airline & Flight Number */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -96,7 +161,7 @@ export default function AddFlight() {
                     <span className="absolute left-3 top-3 text-slate-400">🏛</span>
                     <select
                       name="airline"
-                      value={formData.airline}
+                      value={form.airline}
                       onChange={handleChange}
                       required
                       className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 text-slate-800 font-medium bg-white"
@@ -116,8 +181,8 @@ export default function AddFlight() {
                     <span className="absolute left-3 top-2.5 text-slate-400 font-bold">#</span>
                     <input
                       type="text"
-                      name="flightNumber"
-                      value={formData.flightNumber}
+                      name="FLightNumber"
+                      value={form.FLightNumber}
                       onChange={handleChange}
                       placeholder="e.g. 6E 215"
                       required
@@ -134,8 +199,8 @@ export default function AddFlight() {
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-slate-400">✈</span>
                     <select
-                      name="aircraft"
-                      value={formData.aircraft}
+                      name="Aircraft"
+                      value={form.Aircraft}
                       onChange={handleChange}
                       required
                       className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 text-slate-800 font-medium bg-white"
@@ -155,7 +220,9 @@ export default function AddFlight() {
                       🖼 Choose Image
                       <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                     </label>
-                    <span className="text-[10px] text-slate-400 px-2 truncate">No file chosen</span>
+                    <span className="text-[10px] text-slate-400 px-2 truncate">
+                      {imageFile ? imageFile.name : "No file chosen"}
+                    </span>
                   </div>
                   <p className="text-[10px] text-slate-400 mt-1">Upload flight image (JPG, PNG, WEBP - Max 5MB)</p>
                 </div>
@@ -170,7 +237,7 @@ export default function AddFlight() {
                     <input
                       type="text"
                       name="from"
-                      value={formData.from}
+                      value={form.from}
                       onChange={handleChange}
                       placeholder="e.g. Delhi (DEL)"
                       required
@@ -186,7 +253,7 @@ export default function AddFlight() {
                     <input
                       type="text"
                       name="to"
-                      value={formData.to}
+                      value={form.to}
                       onChange={handleChange}
                       placeholder="e.g. Mumbai (BOM)"
                       required
@@ -205,7 +272,7 @@ export default function AddFlight() {
                     <input
                       type="text"
                       name="departureTime"
-                      value={formData.departureTime}
+                      value={form.departureTime}
                       onChange={handleChange}
                       placeholder="e.g. 14:30"
                       required
@@ -221,7 +288,7 @@ export default function AddFlight() {
                     <input
                       type="text"
                       name="arrivalTime"
-                      value={formData.arrivalTime}
+                      value={form.arrivalTime}
                       onChange={handleChange}
                       placeholder="e.g. 17:45"
                       required
@@ -239,8 +306,8 @@ export default function AddFlight() {
                     <span className="absolute left-3 top-2.5 text-slate-400">💼</span>
                     <input
                       type="text"
-                      name="baggage"
-                      value={formData.baggage}
+                      name="Baggage"
+                      value={form.Baggage}
                       onChange={handleChange}
                       placeholder="e.g. 7"
                       required
@@ -256,7 +323,7 @@ export default function AddFlight() {
                     <input
                       type="date"
                       name="date"
-                      value={formData.date}
+                      value={form.date}
                       onChange={handleChange}
                       required
                       className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 text-slate-800 font-medium bg-white"
@@ -273,7 +340,7 @@ export default function AddFlight() {
                   <input
                     type="text"
                     name="price"
-                    value={formData.price}
+                    value={form.price}
                     onChange={handleChange}
                     placeholder="e.g. 4299"
                     required
@@ -289,7 +356,7 @@ export default function AddFlight() {
                   <span className="absolute left-3 top-3 text-slate-400">💺</span>
                   <select
                     name="seatRows"
-                    value={formData.seatRows}
+                    value={form.seatRows}
                     onChange={handleChange}
                     required
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 text-slate-800 font-medium bg-white"
@@ -325,7 +392,7 @@ export default function AddFlight() {
 
             {/* 3. LIVE PREVIEW CARD (5 COLS) */}
             <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-              
+
               <div>
                 <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
                   <span>👁</span> Preview
@@ -335,22 +402,28 @@ export default function AddFlight() {
 
               {/* Flight Image */}
               <div className="h-40 rounded-xl overflow-hidden bg-slate-100">
-                <img
-                  src={formData.image}
-                  alt="Flight Preview"
-                  className="w-full h-full object-cover"
-                />
+                {form.image ? (
+                  <img
+                    src={form.image}
+                    alt="Flight Preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-sm flex items-center h-full justify-center font-semibold text-slate-400">
+                    No Preview
+                  </span>
+                )}
               </div>
 
               {/* Flight Main Header */}
               <div className="flex justify-between items-start pt-1">
                 <div>
-                  <h4 className="font-extrabold text-sm text-slate-900">{formData.airline || 'Airline Name'}</h4>
-                  <p className="text-[11px] text-slate-400 font-medium">{formData.aircraft || 'Aircraft'}</p>
+                  <h4 className="font-extrabold text-sm text-slate-900">{form.airline || 'Airline Name'}</h4>
+                  <p className="text-[11px] text-slate-400 font-medium">{form.Aircraft || 'Aircraft'}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] text-slate-400 font-medium">Flight No.</p>
-                  <p className="font-extrabold text-xs text-slate-900">{formData.flightNumber || '---'}</p>
+                  <p className="font-extrabold text-xs text-slate-900">{form.FLightNumber || '---'}</p>
                 </div>
               </div>
 
@@ -359,8 +432,8 @@ export default function AddFlight() {
                 <div className="flex items-center gap-2">
                   <span className="text-blue-600">📍</span>
                   <div>
-                    <p className="font-bold text-slate-800">{formData.from || 'From'}</p>
-                    <p className="text-slate-400 font-medium text-[11px]">{formData.departureTime || '--:--'}</p>
+                    <p className="font-bold text-slate-800">{form.from || 'From'}</p>
+                    <p className="text-slate-400 font-medium text-[11px]">{form.departureTime || '--:--'}</p>
                   </div>
                 </div>
 
@@ -368,8 +441,8 @@ export default function AddFlight() {
 
                 <div className="flex items-center gap-2 text-right">
                   <div>
-                    <p className="font-bold text-slate-800">{formData.to || 'To'}</p>
-                    <p className="text-slate-400 font-medium text-[11px]">{formData.arrivalTime || '--:--'}</p>
+                    <p className="font-bold text-slate-800">{form.to || 'To'}</p>
+                    <p className="text-slate-400 font-medium text-[11px]">{form.arrivalTime || '--:--'}</p>
                   </div>
                   <span className="text-blue-600">📍</span>
                 </div>
@@ -379,15 +452,15 @@ export default function AddFlight() {
               <div className="grid grid-cols-3 gap-2 text-[11px] text-center bg-slate-50/50 p-3 rounded-xl border border-slate-100">
                 <div>
                   <p className="text-slate-400 font-medium flex items-center justify-center gap-1">💼 Baggage</p>
-                  <p className="font-bold text-slate-800 mt-0.5">{formData.baggage ? `${formData.baggage} KG` : '-'}</p>
+                  <p className="font-bold text-slate-800 mt-0.5">{form.Baggage ? `${form.Baggage} KG` : '-'}</p>
                 </div>
                 <div>
                   <p className="text-slate-400 font-medium flex items-center justify-center gap-1">📅 Date</p>
-                  <p className="font-bold text-slate-800 mt-0.5">{formData.date || '-'}</p>
+                  <p className="font-bold text-slate-800 mt-0.5">{form.date || '-'}</p>
                 </div>
                 <div>
                   <p className="text-slate-400 font-medium flex items-center justify-center gap-1">₹ Price</p>
-                  <p className="font-bold text-slate-800 mt-0.5">{formData.price ? `₹${formData.price}` : '-'}</p>
+                  <p className="font-bold text-slate-800 mt-0.5">{form.price ? `₹${form.price}` : '-'}</p>
                 </div>
               </div>
 

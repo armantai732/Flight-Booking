@@ -1,28 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
+import { DeleteFlight, GetFlight } from '../api/api';
 
 export default function ManageFlights() {
   const navigate = useNavigate();
+  const [flights, setFlights] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeMenu, setActiveMenu] = useState('Manage Flights');
+  const [currentPage, setCurrentPage] = useState(1);
+  const flightsPerPage = 6;
 
-  // Dummy Initial Data matching image exactly
-  const initialFlights = [
-    { id: 1, image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=150&q=80', flightNo: '6E 215', airline: 'IndiGo', aircraft: 'Airbus A320', fromTo: 'Delhi (DEL) ➔ Mumbai (BOM)', timing: '14:30 - 17:45', date: '2026-09-15', price: '4,299', baggage: '7 KG', status: 'Active' },
-    { id: 2, image: 'https://images.unsplash.com/photo-1556388158-158ea5ccacbd?auto=format&fit=crop&w=150&q=80', flightNo: 'AI101', airline: 'Air India', aircraft: 'Airbus A320neo', fromTo: 'Delhi (DEL) ➔ Dubai (DXB)', timing: '21:30 - 00:10', date: '2026-09-16', price: '12,999', baggage: '7 KG', status: 'Active' },
-    { id: 3, image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=150&q=80', flightNo: 'SG782', airline: 'SpiceJet', aircraft: 'Boeing 737', fromTo: 'Mumbai (BOM) ➔ Goa (GOI)', timing: '11:20 - 12:35', date: '2026-09-17', price: '3,499', baggage: '7 KG', status: 'Active' },
-    { id: 4, image: 'https://images.unsplash.com/photo-1520437358207-323b43b5752b?auto=format&fit=crop&w=150&q=80', flightNo: 'UK654', airline: 'Vistara', aircraft: 'Airbus A321', fromTo: 'Delhi (DEL) ➔ Bengaluru (BLR)', timing: '14:20 - 17:10', date: '2026-09-18', price: '6,299', baggage: '15 KG', status: 'Active' },
-    { id: 5, image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=150&q=80', flightNo: '6E732', airline: 'IndiGo', aircraft: 'Airbus A321', fromTo: 'Ahmedabad (AMD) ➔ Delhi (DEL)', timing: '09:15 - 10:55', date: '2026-09-19', price: '3,999', baggage: '7 KG', status: 'Active' },
-    { id: 6, image: 'https://images.unsplash.com/photo-1556388158-158ea5ccacbd?auto=format&fit=crop&w=150&q=80', flightNo: 'AI203', airline: 'Air India', aircraft: 'Boeing 787', fromTo: 'Delhi (DEL) ➔ Dubai (DXB)', timing: '21:30 - 00:10', date: '2026-09-20', price: '12,999', baggage: '25 KG', status: 'Active' },
-    { id: 7, image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=150&q=80', flightNo: '6E893', airline: 'IndiGo', aircraft: 'Airbus A320', fromTo: 'Mumbai (BOM) ➔ Kolkata (CCU)', timing: '16:40 - 19:25', date: '2026-09-21', price: '5,499', baggage: '7 KG', status: 'Active' },
-    { id: 8, image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=150&q=80', flightNo: 'SG274', airline: 'SpiceJet', aircraft: 'Boeing 737 MAX', fromTo: 'Bengaluru (BLR) ➔ Goa (GOI)', timing: '07:45 - 08:55', date: '2026-09-22', price: '2,999', baggage: '7 KG', status: 'Active' },
-    { id: 9, image: 'https://images.unsplash.com/photo-1520437358207-323b43b5752b?auto=format&fit=crop&w=150&q=80', flightNo: 'UK812', airline: 'Vistara', aircraft: 'Airbus A320neo', fromTo: 'Mumbai (BOM) ➔ London (LHR)', timing: '23:15 - 05:50', date: '2026-09-23', price: '28,999', baggage: '23 KG', status: 'Active' },
-    { id: 10, image: 'https://images.unsplash.com/photo-1556388158-158ea5ccacbd?auto=format&fit=crop&w=150&q=80', flightNo: 'QP536', airline: 'Akasa Air', aircraft: 'Boeing 737 MAX', fromTo: 'Ahmedabad (AMD) ➔ Goa (GOI)', timing: '12:30 - 14:10', date: '2026-09-24', price: '4,599', baggage: '7 KG', status: 'Active' },
-  ];
-
-  const [flights, setFlights] = useState(initialFlights);
-
-  // Filters State
   const [search, setSearch] = useState('');
   const [selectedAirline, setSelectedAirline] = useState('All Airlines');
   const [selectedFrom, setSelectedFrom] = useState('All Cities');
@@ -36,34 +25,111 @@ export default function ManageFlights() {
     setSelectedFrom('All Cities');
     setSelectedTo('All Cities');
     setSelectedStatus('All');
+    setCurrentPage(1);
   };
 
-  // Delete Flight Action
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this flight?')) {
-      setFlights(flights.filter((flight) => flight.id !== id));
-    }
-  };
 
   // Filter Logic
   const filteredFlights = flights.filter((flight) => {
+    const FLightNumber = String(flight.FLightNumber ?? "");
+    const airline = String(flight.airline ?? "");
+    const from = String(flight.from ?? "");
+    const to = String(flight.to ?? "");
+
+    const searchText = String(search ?? "").toLowerCase();
+
     const matchesSearch =
-      flight.flightNo.toLowerCase().includes(search.toLowerCase()) ||
-      flight.airline.toLowerCase().includes(search.toLowerCase()) ||
-      flight.fromTo.toLowerCase().includes(search.toLowerCase());
+      FLightNumber.toLowerCase().includes(searchText) ||
+      airline.toLowerCase().includes(searchText) ||
+      from.toLowerCase().includes(searchText) ||
+      to.toLowerCase().includes(searchText);
 
     const matchesAirline =
-      selectedAirline === 'All Airlines' || flight.airline === selectedAirline;
+      selectedAirline === "All Airlines" ||
+      airline === selectedAirline;
 
-    const matchesStatus =
-      selectedStatus === 'All' || flight.status === selectedStatus;
+    // From filter
+    const matchesFrom =
+      selectedFrom === "All Cities" ||
+      from.toLowerCase() === selectedFrom.toLowerCase();
 
-    return matchesSearch && matchesAirline && matchesStatus;
+    // To filter
+    const matchesTo =
+      selectedTo === "All Cities" ||
+      to.toLowerCase() === selectedTo.toLowerCase();
+
+
+    return matchesSearch && matchesAirline && matchesFrom && matchesTo;
   });
+
+
+  // Pagination
+  const totalPages = Math.ceil(filteredFlights.length / flightsPerPage);
+
+  const startIndex = (currentPage - 1) * flightsPerPage;
+  const endIndex = startIndex + flightsPerPage;
+
+  const currentFlights = filteredFlights.slice(startIndex, endIndex);
+
+
+  useEffect(() => {
+    const fetchFlights = async () => {
+      try {
+        setLoading(true);
+
+        const res = await GetFlight();
+
+        // Adjust this depending on your API response structure
+        setFlights(res.Flight || []);
+      } catch (err) {
+        console.error('Error fetching flights:', err);
+        setError('Failed to load flights.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFlights();
+  }, []);
+
+
+  const handleDelete = async (id) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this flight?"
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      const res = await DeleteFlight(id);
+
+      console.log("Delete Response:", res);
+
+      if (res.status || res.success) {
+        alert(res.message || "Flight deleted successfully");
+
+        // UI se bhi flight remove
+        setFlights((prevFlights) =>
+          prevFlights.filter((flight) => flight._id !== id)
+        );
+      } else {
+        alert(res.message || "Failed to delete flight");
+      }
+
+    } catch (error) {
+      console.error("Delete Flight Error:", error);
+      alert(error.message || "Something went wrong");
+    }
+  };
+
+
+
 
   return (
     <div className="flex h-screen bg-[#f4f7fb] font-sans overflow-hidden">
-      
+
       {/* 1. LEFT SIDEBAR */}
       <aside>
         <AdminSidebar />
@@ -71,12 +137,12 @@ export default function ManageFlights() {
 
       {/* RIGHT MAIN CONTAINER */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        
+
 
 
         {/* PAGE CONTENT */}
-        <main className="p-8 space-y-6">
-          
+        <main className="p-8 space-y-10">
+
           {/* Header & Add Button */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -99,14 +165,20 @@ export default function ManageFlights() {
           {/* FILTER BAR CARD */}
           <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3 items-center text-xs">
-              
+
               {/* Search Bar */}
               <div className="md:col-span-4 relative">
-                <span className="absolute left-3.5 top-2.5 text-slate-400">🔍</span>
+                <label className="block text-[10px] text-slate-400 font-bold mb-0.5 pl-1">Search</label>
+                <span className="absolute left-3.5 top-7 text-slate-400">🔍</span>
                 <input
                   type="text"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={
+                    (e) => {
+                      setSearch(e.target.value);
+                      setCurrentPage(1);
+                    }
+                  }
                   placeholder="Search by Airline, Flight No, From, To..."
                   className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 text-slate-700 font-medium placeholder-slate-400"
                 />
@@ -117,7 +189,10 @@ export default function ManageFlights() {
                 <label className="block text-[10px] text-slate-400 font-bold mb-0.5 pl-1">Airline</label>
                 <select
                   value={selectedAirline}
-                  onChange={(e) => setSelectedAirline(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedAirline(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="w-full p-2 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 text-slate-700 font-medium bg-white"
                 >
                   <option value="All Airlines">All Airlines</option>
@@ -134,7 +209,10 @@ export default function ManageFlights() {
                 <label className="block text-[10px] text-slate-400 font-bold mb-0.5 pl-1">From</label>
                 <select
                   value={selectedFrom}
-                  onChange={(e) => setSelectedFrom(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedFrom(e.target.value);
+                    setCurrentPage(1)
+                  }}
                   className="w-full p-2 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 text-slate-700 font-medium bg-white"
                 >
                   <option value="All Cities">All Cities</option>
@@ -150,7 +228,10 @@ export default function ManageFlights() {
                 <label className="block text-[10px] text-slate-400 font-bold mb-0.5 pl-1">To</label>
                 <select
                   value={selectedTo}
-                  onChange={(e) => setSelectedTo(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedTo(e.target.value);
+                    setCurrentPage(1)
+                  }}
                   className="w-full p-2 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 text-slate-700 font-medium bg-white"
                 >
                   <option value="All Cities">All Cities</option>
@@ -162,18 +243,21 @@ export default function ManageFlights() {
               </div>
 
               {/* Status Select */}
-              <div className="md:col-span-1">
+              {/* <div className="md:col-span-1">
                 <label className="block text-[10px] text-slate-400 font-bold mb-0.5 pl-1">Status</label>
                 <select
                   value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedStatus(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="w-full p-2 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 text-slate-700 font-medium bg-white"
                 >
                   <option value="All">All</option>
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
                 </select>
-              </div>
+              </div> */}
 
               {/* Reset Button */}
               <div className="md:col-span-1 pt-3.5">
@@ -204,15 +288,15 @@ export default function ManageFlights() {
                     <th className="py-3.5 px-4">Date</th>
                     <th className="py-3.5 px-4">Price</th>
                     <th className="py-3.5 px-4">Baggage</th>
-                    <th className="py-3.5 px-4">Status</th>
+                    {/* <th className="py-3.5 px-4">Status</th> */}
                     <th className="py-3.5 px-4 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
-                  {filteredFlights.length > 0 ? (
-                    filteredFlights.map((flight, index) => (
-                      <tr key={flight.id} className="hover:bg-slate-50/70 transition">
-                        <td className="py-3 px-4 text-slate-400 font-bold">{index + 1}</td>
+                  {currentFlights.length > 0 ? (
+                    currentFlights.map((flight, index) => (
+                      <tr key={flight._id} className="hover:bg-slate-50/70 transition">
+                        <td className="py-3 px-4 text-slate-400 font-bold">{startIndex + index + 1}</td>
                         <td className="py-3 px-4">
                           <img
                             src={flight.image}
@@ -220,19 +304,19 @@ export default function ManageFlights() {
                             className="w-12 h-8 rounded-lg object-cover shadow-sm border border-slate-100"
                           />
                         </td>
-                        <td className="py-3 px-4 font-extrabold text-slate-900">{flight.flightNo}</td>
+                        <td className="py-3 px-4 font-extrabold text-slate-900">{flight.FLightNumber}</td>
                         <td className="py-3 px-4 font-bold">{flight.airline}</td>
-                        <td className="py-3 px-4 text-slate-500">{flight.aircraft}</td>
-                        <td className="py-3 px-4 text-slate-800 font-semibold">{flight.fromTo}</td>
-                        <td className="py-3 px-4 text-slate-600">{flight.timing}</td>
+                        <td className="py-3 px-4 text-slate-500">{flight.Aircraft}</td>
+                        <td className="py-3 px-4 text-slate-800 font-semibold flex">{flight.from} ➔ {flight.to}</td>
+                        <td className="py-3 px-4 text-slate-600">{flight.departureTime} - {flight.arrivalTime}</td>
                         <td className="py-3 px-4 text-slate-500">{flight.date}</td>
                         <td className="py-3 px-4 font-extrabold text-slate-900">₹{flight.price}</td>
-                        <td className="py-3 px-4 text-slate-500">{flight.baggage}</td>
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 text-slate-500">{flight.Baggage}</td>
+                        {/* <td className="py-3 px-4">
                           <span className="bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full text-[10px] font-bold border border-emerald-100">
                             {flight.status}
                           </span>
-                        </td>
+                        </td> */}
                         <td className="py-3 px-4">
                           <div className="flex items-center justify-center gap-2">
                             {/* Edit Button */}
@@ -245,7 +329,7 @@ export default function ManageFlights() {
                             </button>
                             {/* Delete Button */}
                             <button
-                              onClick={() => handleDelete(flight.id)}
+                              onClick={() => handleDelete(flight._id)}
                               className="w-7 h-7 rounded-lg bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition text-xs shadow-sm"
                               title="Delete"
                             >
@@ -273,15 +357,43 @@ export default function ManageFlights() {
               </div>
 
               <div className="flex items-center gap-1">
-                <button className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 disabled:opacity-50">
+
+                {/* Previous */}
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
                   ‹
                 </button>
-                <button className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-600 text-white font-bold shadow-sm">
-                  1
-                </button>
-                <button className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50">
+
+                {/* Page Numbers */}
+                {Array.from({ length: totalPages }, (_, index) => index + 1).map(
+                  (page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-7 h-7 flex items-center justify-center rounded-lg font-bold ${currentPage === page
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'border border-slate-200 text-slate-500 hover:bg-slate-50'
+                        }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                )}
+
+                {/* Next */}
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
                   ›
                 </button>
+
               </div>
             </div>
 

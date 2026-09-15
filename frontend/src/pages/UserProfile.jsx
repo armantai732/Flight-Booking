@@ -83,15 +83,15 @@ export default function UserProfile() {
   const sidebarMenu = [
     { name: 'Profile', icon: '👤', path: '/profile' },
     { name: 'My Bookings', icon: '📅', path: '/my-bookings' },
-    { name: 'Saved Passengers', icon: '👥', path: '/passengers' },
+    { name: 'Saved Passengers', icon: '👥' },
     { name: 'Wallet', icon: '👛', path: '/wallet' },
-    { name: 'Settings', icon: '⚙️', path: '/settings' },
+    { name: 'Settings', icon: '⚙️' },
   ];
 
   const quickActions = [
     { title: 'Edit Profile', desc: 'Update your personal details', icon: '✏️', action: handleOpenEdit },
     { title: 'Change Password', desc: 'Keep your account secure', icon: '🔒', action: () => navigate("/change-password") },
-    { title: 'Manage Saved Passengers', desc: 'Add / Edit passenger details', icon: '👥', action: () => navigate('/passengers') },
+    { title: 'Manage Saved Passengers', desc: 'Add / Edit passenger details', icon: '👥', /*action: () => navigate('/passengers')*/ },
     { title: 'Payment Methods', desc: 'Manage your cards & wallets', icon: '💳', action: () => navigate('/wallet') },
   ];
 

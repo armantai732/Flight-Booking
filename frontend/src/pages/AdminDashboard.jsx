@@ -20,7 +20,7 @@ export default function AdminDashboard() {
 
         const data = await getDashboardStats();
 
-        console.log("Dashboard Stats:", data);
+        // console.log("Dashboard Stats:", data);
 
         setStatsData({
           totalFlights: data.totalFlights || 0,
