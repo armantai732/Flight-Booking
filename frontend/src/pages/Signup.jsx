@@ -22,7 +22,7 @@ export default function Signup() {
   // 🔹 LocalStorage માંથી 'appTheme' મેળવવું (Default: 'dark')
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('appTheme');
-    return savedTheme ? savedTheme === 'dark' : true;
+    return savedTheme ? savedTheme === 'dark' : false;
   });
 
   // 🔹 Real-time Theme changes માટે Event Listener
