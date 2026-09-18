@@ -9,7 +9,7 @@ export default function FlightBooking() {
   // 1. Theme Management using localStorage
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('appTheme');
-    return savedTheme ? savedTheme === 'dark' : true; // Default Dark Theme
+    return savedTheme ? savedTheme === 'dark' : false; // Default Dark Theme
   });
 
   useEffect(() => {
