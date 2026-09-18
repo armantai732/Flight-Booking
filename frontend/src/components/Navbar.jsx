@@ -299,6 +299,7 @@ export default function Navbar() {
                             <>
                                 <Link
                                     to="/my-bookings"
+                                    onClick={() => setIsMobileMenuOpen(false)}
                                     className={`text-xs font-semibold px-3 py-2 transition ${isDark ? "text-slate-300 hover:text-[#1d6bf3]" : "text-gray-700 hover:text-[#1d6bf3]"}`}
                                 >
                                     My Booking
@@ -306,13 +307,17 @@ export default function Navbar() {
 
                                 <Link
                                     to="/profile"
+                                    onClick={() => setIsMobileMenuOpen(false)}
                                     className={`text-xs font-semibold px-3 py-2 transition ${isDark ? "text-slate-300 hover:text-[#1d6bf3]" : "text-gray-700 hover:text-[#1d6bf3]"}`}
                                 >
                                     Profile
                                 </Link>
 
                                 <button
-                                    onClick={handleLogout}
+                                    onClick={() => {
+                                        handleLogout,
+                                            setIsMobileMenuOpen(false)
+                                    }}
                                     className="bg-[#1d6bf3] hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-sm hover:shadow transition duration-200 text-left"
                                 >
                                     Log Out
@@ -322,6 +327,7 @@ export default function Navbar() {
                             <>
                                 <Link
                                     to="/login"
+                                    onClick={() => setIsMobileMenuOpen(false)}
                                     className={`text-xs font-semibold px-3 py-2 transition ${isDark ? "text-slate-300 hover:text-[#1d6bf3]" : "text-gray-700 hover:text-[#1d6bf3]"}`}
                                 >
                                     Login
@@ -329,6 +335,7 @@ export default function Navbar() {
 
                                 <Link
                                     to="/signup"
+                                    onClick={() => setIsMobileMenuOpen(false)}
                                     className="bg-[#1d6bf3] hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-sm hover:shadow transition duration-200 text-center"
                                 >
                                     Sign Up

@@ -149,7 +149,7 @@ export default function UserProfile() {
                 </div>
               </div>
 
-              <div className="hidden md:flex flex-col items-end gap-2 z-10">
+              <div className="flex flex-col items-end gap-2 z-10">
                 <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider">
                   Account Status
                 </p>
@@ -168,13 +168,6 @@ export default function UserProfile() {
                 </button>
               </div>
 
-              <div
-                className="absolute right-0 top-0 bottom-0 w-1/2 opacity-10 bg-cover bg-center pointer-events-none"
-                style={{
-                  backgroundImage:
-                    "url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80')",
-                }}
-              ></div>
             </div>
 
             {/* QUICK ACTIONS & HUB */}

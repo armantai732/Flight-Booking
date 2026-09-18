@@ -1,381 +1,526 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import BackButton from '../components/BackButton';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { GetProfile, UpdateProfile } from '../api/api';
+import UserSidebar from '../components/UserSidebar';
+import { toast } from 'react-toastify';
 
-export default function FlightBooking() {
-  const location = useLocation();
+export default function UserProfile() {
   const navigate = useNavigate();
 
-  // 1. Theme Management using localStorage
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [updateLoading, setUpdateLoading] = useState(false);
+
+  // 🔹 Read theme state from localStorage on initial render
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem('appTheme');
-    return savedTheme ? savedTheme === 'dark' : false; // Default Dark Theme
+    return localStorage.getItem('appTheme') === 'dark';
+  });
+
+  // 🔹 Synchronize real-time theme changes across components
+  useEffect(() => {
+    const handleThemeChange = () => {
+      const currentTheme = localStorage.getItem('appTheme');
+      setIsDarkMode(currentTheme === 'dark');
+    };
+
+    window.addEventListener('themeChange', handleThemeChange);
+    return () => {
+      window.removeEventListener('themeChange', handleThemeChange);
+    };
+  }, []);
+
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    email: '',
+    mobile: '',
+    date: '',
+    gender: ''
   });
 
   useEffect(() => {
-    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-  }, [isDarkMode]);
+    fetchUserProfile();
+  }, []);
 
-  const toggleTheme = () => {
-    setIsDarkMode((prev) => !prev);
-  };
-
-  // Active Flight Data
-  const flight = location.state?.flight;
-
-  const price = Number(flight?.price || 0);
-  const taxes = price / 25;
-
-  const seatsList = useMemo(() => flight?.seats || [], [flight]);
-  const [selectedSeat, setSelectedSeat] = useState(null);
-
-  const columnsLeft = ['A', 'B', 'C'];
-  const columnsRight = ['D', 'E', 'F'];
-
-  const getSeatType = (seatCode) => {
-    if (!seatCode) return '—';
-    const col = seatCode.slice(-1).toUpperCase();
-
-    if (col === 'A' || col === 'F') return 'Window Seat';
-    if (col === 'B' || col === 'E') return 'Middle Seat';
-    if (col === 'C' || col === 'D') return 'Aisle Seat';
-    return '—';
-  };
-
-  const WINDOW_SEAT_FEE = 200;
-  const seatExtra = selectedSeat && getSeatType(selectedSeat) === 'Window Seat' ? WINDOW_SEAT_FEE : 0;
-  const totalAmount = price + taxes + seatExtra;
-
-  const seatRows = useMemo(() => {
-    const rows = seatsList.map((s) => parseInt(s.seatNumber, 10)).filter((r) => !isNaN(r));
-    return [...new Set(rows)].sort((a, b) => a - b);
-  }, [seatsList]);
-
-  const handleSeatClick = (seatCode) => {
-    const seatObj = seatsList.find((s) => s.seatNumber === seatCode);
-    if (seatObj && seatObj.status?.toLowerCase().trim() !== 'booked') {
-      setSelectedSeat(seatCode);
+  const fetchUserProfile = async () => {
+    try {
+      setLoading(true);
+      const response = await GetProfile();
+      if (response?.status && response?.data) {
+        setUser(response.data);
+        setEditFormData({
+          name: response.data.name || '',
+          email: response.data.email || '',
+          mobile: response.data.mobile || '',
+          date: response.data.date || '',
+          gender: response.data.gender || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleConfirmSeat = () => {
-    if (!selectedSeat) return;
-    navigate('/checkout', {
-      state: {
-        flight,
-        selectedSeat,
-        price,
-        taxes,
-        seatExtra,
-        totalAmount,
-      },
+  const handleInputChange = (e) => {
+    setEditFormData({
+      ...editFormData,
+      [e.target.name]: e.target.value
     });
   };
 
-  if (!flight) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center p-4 ${isDarkMode ? 'bg-slate-900 text-slate-400' : 'bg-slate-100 text-slate-600'}`}>
-        <p className="font-medium">No flight selected. Please go back and select a flight.</p>
-      </div>
-    );
-  }
-
-  const renderSeatButton = (seatCode) => {
-    const seatObj = seatsList.find((s) => s.seatNumber === seatCode);
-    if (!seatObj) return <div key={seatCode} className="w-8 h-8 sm:w-9 sm:h-9"></div>;
-
-    const isBooked = seatObj.status?.toLowerCase().trim() === 'booked';
-    const isSelected = selectedSeat === seatCode;
-
-    return (
-      <button
-        key={seatCode}
-        disabled={isBooked}
-        onClick={() => handleSeatClick(seatCode)}
-        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-[10px] sm:text-xs font-bold transition flex items-center justify-center ${
-          isBooked
-            ? isDarkMode
-              ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed border border-slate-700'
-              : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
-            : isSelected
-              ? 'bg-blue-600 text-white shadow-md border border-blue-500 ring-2 ring-blue-400/40'
-              : isDarkMode
-                ? 'bg-slate-800 border border-slate-600 text-slate-300 hover:border-blue-400 hover:text-white'
-                : 'bg-white border border-slate-300 text-slate-700 hover:border-blue-500 hover:text-blue-600'
-        }`}
-      >
-        {seatCode}
-      </button>
-    );
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    try {
+      setUpdateLoading(true);
+      const res = await UpdateProfile(editFormData);
+      if (res?.status) {
+        setUser({ ...user, ...editFormData });
+        setIsEditOpen(false);
+        toast.success('Profile updated successfully!');
+      } else {
+        toast.error(res?.message || 'Failed to update profile.');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('An error occurred while updating profile.');
+    } finally {
+      setUpdateLoading(false);
+    }
   };
 
   return (
-    <div className={`min-h-screen py-6 px-3 sm:px-6 lg:px-12 font-sans transition-colors duration-300 ${
-      isDarkMode ? 'bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-800'
-    }`}>
-      <div className="max-w-6xl mx-auto space-y-6">
-
-        {/* Top Header Row with Back Button and Theme Toggle */}
-        <div className="flex justify-between items-center">
-          <BackButton label="Back" />
+    <div
+      className={`min-h-screen font-sans relative transition-colors duration-200 ${
+        isDarkMode
+          ? 'bg-slate-900 text-slate-100 dark'
+          : 'bg-[#f4f7fb] text-slate-800'
+      }`}
+    >
+      {/* MAIN CONTAINER */}
+      <div className="max-w-7xl mx-auto p-6 md:p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
-          <button
-            onClick={toggleTheme}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold border transition flex items-center gap-2 ${
-              isDarkMode
-                ? 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-700'
-                : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100 shadow-sm'
-            }`}
-          >
-            {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-          </button>
-        </div>
-
-        {/* TOP ROW: FLIGHT DETAILS & FARE SUMMARY */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-
-          {/* LEFT: FLIGHT CARD (8 COLS) */}
-          <div className={`lg:col-span-8 rounded-2xl p-5 sm:p-6 border shadow-md flex flex-col justify-between space-y-6 ${
-            isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
-          }`}>
-
-            {/* Header: Airline Name & Flight Number */}
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="text-red-500 font-extrabold text-lg sm:text-xl tracking-wider">
-                  ✈ {flight.airline}
-                </div>
-              </div>
-              <span className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[11px] font-semibold px-3 py-1 rounded-full">
-                {flight.flightNumber || flight.FLightNumber}
-              </span>
-            </div>
-
-            {/* Departure & Arrival Route Info */}
-            <div className="flex items-center justify-between text-center px-2">
-              <div className="text-left">
-                <div className={`text-xl sm:text-2xl font-extrabold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                  {flight.departureTime}
-                </div>
-                <div className={`text-xs font-semibold ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-                  {flight.from}
-                </div>
-              </div>
-
-              <div className="text-slate-400 text-xs font-medium">Non-stop</div>
-
-              <div className="text-right">
-                <div className={`text-xl sm:text-2xl font-extrabold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                  {flight.arrivalTime}
-                </div>
-                <div className={`text-xs font-semibold ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-                  {flight.to}
-                </div>
-              </div>
-            </div>
-
-            {/* Sub Info: Aircraft, Baggage, Meals, Date */}
-            <div className={`grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t text-xs ${
-              isDarkMode ? 'border-slate-700' : 'border-slate-100'
-            }`}>
-              <div className="flex items-center gap-2">
-                <span className="text-blue-500">✈</span>
-                <div>
-                  <p className={`text-[10px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Aircraft</p>
-                  <p className={`font-bold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>{flight.Aircraft || flight.aircraft}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-blue-500">🧳</span>
-                <div>
-                  <p className={`text-[10px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Baggage</p>
-                  <p className={`font-bold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>{flight.Baggage || flight.baggage} kg</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-purple-500">🍽</span>
-                <div>
-                  <p className={`text-[10px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Meals</p>
-                  <p className={`font-bold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>Available</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-purple-500">📅</span>
-                <div>
-                  <p className={`text-[10px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Date</p>
-                  <p className={`font-bold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>{flight.date}</p>
-                </div>
-              </div>
-            </div>
-
+          {/* LEFT SIDEBAR */}
+          <div className="lg:col-span-3">
+            <UserSidebar />
           </div>
 
-          {/* RIGHT: FARE SUMMARY CARD (4 COLS) */}
-          <div className={`lg:col-span-4 rounded-2xl p-5 sm:p-6 border shadow-md flex flex-col justify-between space-y-4 ${
-            isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
-          }`}>
-            <h4 className={`font-bold text-base ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Fare Summary</h4>
-
-            <div className={`space-y-3 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              <div className="flex justify-between items-center">
-                <span>Base Fare</span>
-                <span className={`font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>₹ {price.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Taxes & Fees</span>
-                <span className={`font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>₹ {taxes.toLocaleString()}</span>
-              </div>
-              {seatExtra > 0 && (
-                <div className="flex justify-between items-center text-blue-500">
-                  <span>Window Seat Fee</span>
-                  <span className="font-semibold">₹ {seatExtra.toLocaleString()}</span>
+          {/* RIGHT MAIN CONTENT */}
+          <div className="lg:col-span-9 space-y-6">
+            
+            {/* HERO USER CARD */}
+            <div
+              className={`relative rounded-2xl overflow-hidden shadow-lg border p-6 md:p-8 flex items-center justify-between transition-colors ${
+                isDarkMode
+                  ? 'bg-slate-950 border-slate-800 text-white'
+                  : 'bg-white border-slate-200 text-slate-900'
+              }`}
+            >
+              <div className="flex items-center gap-5 z-10">
+                <div
+                  className={`w-16 h-16 rounded-full border-2 flex items-center justify-center font-extrabold text-2xl shadow-md ${
+                    isDarkMode
+                      ? 'bg-slate-800 border-slate-700 text-slate-300'
+                      : 'bg-slate-100 border-slate-300 text-slate-600'
+                  }`}
+                >
+                  👤
                 </div>
-              )}
-            </div>
-
-            <div className={`pt-4 border-t flex justify-between items-center ${isDarkMode ? 'border-slate-700' : 'border-slate-100'}`}>
-              <span className={`font-bold text-base ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Total Amount</span>
-              <span className="text-2xl font-extrabold text-blue-500">₹ {totalAmount.toLocaleString()}</span>
-            </div>
-          </div>
-
-        </div>
-
-        {/* BOTTOM SECTION: CHOOSE YOUR SEAT */}
-        <div className={`rounded-2xl p-4 sm:p-8 border shadow-md space-y-6 ${
-          isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
-        }`}>
-          <div>
-            <h3 className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Choose Your Seat</h3>
-            <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Select your preferred seat for a comfortable journey.</p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-            {/* SEAT MAP LEFT (7 COLS) */}
-            <div className="lg:col-span-7 space-y-6 overflow-x-auto pb-2">
-
-              {/* Legends */}
-              <div className={`flex items-center gap-4 sm:gap-6 text-xs font-medium min-w-max ${
-                isDarkMode ? 'text-slate-400' : 'text-slate-600'
-              }`}>
-                <div className="flex items-center gap-2">
-                  <div className={`w-4 h-4 rounded border ${isDarkMode ? 'border-slate-600 bg-slate-800' : 'border-slate-300 bg-white'}`}></div>
-                  <span>Available</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-blue-600"></div>
-                  <span>Selected</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className={`w-4 h-4 rounded border ${isDarkMode ? 'bg-slate-700/50 border-slate-700' : 'bg-slate-200 border-slate-300'}`}></div>
-                  <span>Booked</span>
+                <div>
+                  <h2 className="text-xl font-extrabold tracking-tight">
+                    {loading ? 'Loading...' : user?.name || 'User Name'}
+                  </h2>
+                  <p
+                    className={`text-xs font-medium mt-0.5 ${
+                      isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                    }`}
+                  >
+                    {loading ? '...' : user?.email || 'N/A'}
+                  </p>
+                  <p
+                    className={`text-xs font-medium ${
+                      isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                    }`}
+                  >
+                    {loading ? '...' : user?.mobile ? `${user.mobile}` : 'N/A'}
+                  </p>
                 </div>
               </div>
 
-              {/* Seat Matrix Container */}
-              <div className="min-w-[280px] space-y-3">
-                {/* Column Headings */}
-                <div className={`flex items-center gap-2 text-xs font-semibold pl-6 ${
-                  isDarkMode ? 'text-slate-400' : 'text-slate-500'
-                }`}>
-                  <div className="flex gap-2 justify-between w-[104px] sm:w-[116px] px-1">
-                    <span>A</span>
-                    <span>B</span>
-                    <span>C</span>
-                  </div>
-                  <div className="w-6 sm:w-8"></div>
-                  <div className="flex gap-2 justify-between w-[104px] sm:w-[116px] px-1">
-                    <span>D</span>
-                    <span>E</span>
-                    <span>F</span>
-                  </div>
-                </div>
-
-                {/* Seats Matrix Rows */}
-                <div className="space-y-2">
-                  {seatRows.map((rowNum) => (
-                    <div key={rowNum} className="flex items-center gap-2">
-                      <span className={`w-4 text-xs font-semibold text-center ${
-                        isDarkMode ? 'text-slate-400' : 'text-slate-500'
-                      }`}>
-                        {rowNum}
-                      </span>
-
-                      <div className="flex gap-2">
-                        {columnsLeft.map((col) => renderSeatButton(`${rowNum}${col}`))}
-                      </div>
-
-                      <div className="w-6 sm:w-8"></div>
-
-                      <div className="flex gap-2">
-                        {columnsRight.map((col) => renderSeatButton(`${rowNum}${col}`))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div className="flex flex-col items-end gap-2 z-10">
+                <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider">
+                  Account Status
+                </p>
+                <p className="text-sm font-extrabold text-emerald-500">
+                  Verified Member ✓
+                </p>
+                <button
+                  onClick={() => setIsEditOpen(true)}
+                  className={`mt-1 text-xs px-3 py-1 rounded-lg border transition ${
+                    isDarkMode
+                      ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                  }`}
+                >
+                  ✏️ Edit Profile
+                </button>
               </div>
 
             </div>
 
-            {/* SELECTION SUMMARY RIGHT CARD (5 COLS) */}
-            <div className={`lg:col-span-5 p-5 sm:p-6 rounded-2xl border space-y-5 ${
-              isDarkMode ? 'bg-slate-900/60 border-slate-700' : 'bg-slate-50 border-slate-200'
-            }`}>
-              <div className="flex justify-between items-center">
-                <h4 className={`font-bold text-sm ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Selected Seat</h4>
-                {selectedSeat && (
-                  <span className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
-                    Selected
-                  </span>
-                )}
-              </div>
-
-              <div className={`text-4xl font-extrabold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                {selectedSeat || '—'}
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <div className={`flex justify-between ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                  <span>Seat Type:</span>
-                  <span className={`font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>{getSeatType(selectedSeat)}</span>
-                </div>
-                <div className={`flex justify-between ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                  <span>Price:</span>
-                  <span className="font-semibold text-blue-500">
-                    {seatExtra > 0 ? `₹ ${seatExtra.toLocaleString()}` : '₹ 0 (Free)'}
-                  </span>
-                </div>
-              </div>
-
-              <div className={`p-3 rounded-xl text-[11px] flex items-center gap-2 border ${
-                isDarkMode 
-                  ? 'bg-blue-900/20 text-blue-300 border-blue-800/40' 
-                  : 'bg-blue-50 text-blue-700 border-blue-200'
-              }`}>
-                <span>ℹ</span>
-                <p>You can change your seat anytime before check-in.</p>
-              </div>
-
-              <button
-                onClick={handleConfirmSeat}
-                disabled={!selectedSeat}
-                className={`w-full font-semibold text-xs py-3 rounded-xl transition duration-200 ${
-                  selectedSeat
-                    ? 'bg-blue-600 text-white hover:bg-blue-500 shadow-md'
-                    : isDarkMode
-                      ? 'border border-slate-700 text-slate-500 cursor-not-allowed bg-slate-800/50'
-                      : 'border border-slate-300 text-slate-400 cursor-not-allowed bg-slate-200/50'
+            {/* QUICK ACTIONS & HUB */}
+            <div
+              className={`p-6 rounded-2xl border shadow-sm space-y-4 transition-colors ${
+                isDarkMode
+                  ? 'bg-slate-800 border-slate-700/80'
+                  : 'bg-white border-slate-200'
+              }`}
+            >
+              <h3
+                className={`font-extrabold text-sm ${
+                  isDarkMode ? 'text-slate-100' : 'text-slate-800'
                 }`}
               >
-                Confirm Seat
+                Flight Services & Shortcuts
+              </h3>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div 
+                  onClick={() => navigate('/my-bookings')}
+                  className={`p-4 rounded-2xl border cursor-pointer transition text-center space-y-2 group ${
+                    isDarkMode
+                      ? 'bg-blue-950/40 hover:bg-blue-900/50 border-blue-800/40'
+                      : 'bg-blue-50/60 hover:bg-blue-100/60 border-blue-200'
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center text-lg font-bold mx-auto group-hover:scale-110 transition">
+                    ✈️
+                  </div>
+                  <p
+                    className={`font-extrabold text-xs ${
+                      isDarkMode ? 'text-slate-200' : 'text-slate-800'
+                    }`}
+                  >
+                    My Flights
+                  </p>
+                  <p
+                    className={`text-[10px] font-medium ${
+                      isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                    }`}
+                  >
+                    View active tickets
+                  </p>
+                </div>
+
+                <div 
+                  onClick={() => navigate('/wallet')}
+                  className={`p-4 rounded-2xl border cursor-pointer transition text-center space-y-2 group ${
+                    isDarkMode
+                      ? 'bg-emerald-950/40 hover:bg-emerald-900/50 border-emerald-800/40'
+                      : 'bg-emerald-50/60 hover:bg-emerald-100/60 border-emerald-200'
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg font-bold mx-auto group-hover:scale-110 transition">
+                    💳
+                  </div>
+                  <p
+                    className={`font-extrabold text-xs ${
+                      isDarkMode ? 'text-slate-200' : 'text-slate-800'
+                    }`}
+                  >
+                    Refunds & Wallet
+                  </p>
+                  <p
+                    className={`text-[10px] font-medium ${
+                      isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                    }`}
+                  >
+                    Check balance
+                  </p>
+                </div>
+
+                <div 
+                  onClick={() => navigate('/web-checkin')}
+                  className={`p-4 rounded-2xl border cursor-pointer transition text-center space-y-2 group ${
+                    isDarkMode
+                      ? 'bg-amber-950/40 hover:bg-amber-900/50 border-amber-800/40'
+                      : 'bg-amber-50/60 hover:bg-amber-100/60 border-amber-200'
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center text-lg font-bold mx-auto group-hover:scale-110 transition">
+                    🎫
+                  </div>
+                  <p
+                    className={`font-extrabold text-xs ${
+                      isDarkMode ? 'text-slate-200' : 'text-slate-800'
+                    }`}
+                  >
+                    Web Check-in
+                  </p>
+                  <p
+                    className={`text-[10px] font-medium ${
+                      isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                    }`}
+                  >
+                    Get boarding pass
+                  </p>
+                </div>
+
+                <div 
+                  onClick={() => navigate('/settings')}
+                  className={`p-4 rounded-2xl border cursor-pointer transition text-center space-y-2 group ${
+                    isDarkMode
+                      ? 'bg-purple-950/40 hover:bg-purple-900/50 border-purple-800/40'
+                      : 'bg-purple-50/60 hover:bg-purple-100/60 border-purple-200'
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center text-lg font-bold mx-auto group-hover:scale-110 transition">
+                    ⚙️
+                  </div>
+                  <p
+                    className={`font-extrabold text-xs ${
+                      isDarkMode ? 'text-slate-200' : 'text-slate-800'
+                    }`}
+                  >
+                    Preferences
+                  </p>
+                  <p
+                    className={`text-[10px] font-medium ${
+                      isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                    }`}
+                  >
+                    App & Security
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* UPCOMING TRIP BANNER */}
+            <div
+              className={`p-5 rounded-2xl border shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 transition-colors ${
+                isDarkMode
+                  ? 'bg-slate-800 border-slate-700/80'
+                  : 'bg-white border-slate-200'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold shrink-0 border ${
+                    isDarkMode
+                      ? 'bg-blue-950 text-blue-400 border-blue-800/50'
+                      : 'bg-blue-50 text-blue-600 border-blue-200'
+                  }`}
+                >
+                  🧳
+                </div>
+                <div>
+                  <h4
+                    className={`font-extrabold text-xs ${
+                      isDarkMode ? 'text-slate-100' : 'text-slate-800'
+                    }`}
+                  >
+                    Your Upcoming Trip
+                  </h4>
+                  <p
+                    className={`text-[11px] font-medium ${
+                      isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                    }`}
+                  >
+                    No upcoming flights at the moment. Start booking your next adventure!
+                  </p>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => navigate('/flights')}
+                className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shrink-0 shadow-md"
+              >
+                🔍 Search Flights
               </button>
             </div>
 
           </div>
         </div>
-
       </div>
+
+      {/* EDIT PROFILE MODAL */}
+      {isEditOpen && (
+        <div
+          className={`fixed inset-0 z-50 backdrop-blur-sm flex items-center justify-center p-4 ${
+            isDarkMode ? 'bg-slate-950/70' : 'bg-slate-900/40'
+          }`}
+        >
+          <div
+            className={`rounded-3xl max-w-md w-full p-6 shadow-2xl border space-y-4 max-h-[90vh] overflow-y-auto ${
+              isDarkMode
+                ? 'bg-slate-800 border-slate-700'
+                : 'bg-white border-slate-200'
+            }`}
+          >
+            <div
+              className={`flex justify-between items-center border-b pb-3 ${
+                isDarkMode ? 'border-slate-700' : 'border-slate-200'
+              }`}
+            >
+              <h3
+                className={`font-extrabold text-sm ${
+                  isDarkMode ? 'text-slate-100' : 'text-slate-800'
+                }`}
+              >
+                Edit Profile
+              </h3>
+              <button 
+                onClick={() => setIsEditOpen(false)}
+                className={`w-7 h-7 rounded-full font-bold text-xs transition ${
+                  isDarkMode
+                    ? 'bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-white'
+                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800'
+                }`}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateProfile} className="space-y-3 text-xs">
+              <div>
+                <label
+                  className={`block font-bold mb-1 ${
+                    isDarkMode ? 'text-slate-300' : 'text-slate-700'
+                  }`}
+                >
+                  Full Name
+                </label>
+                <input 
+                  type="text" 
+                  name="name" 
+                  value={editFormData.name} 
+                  onChange={handleInputChange} 
+                  className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:border-blue-500 ${
+                    isDarkMode
+                      ? 'border-slate-700 bg-slate-900 text-slate-100'
+                      : 'border-slate-300 bg-slate-50 text-slate-800'
+                  }`}
+                  required
+                />
+              </div>
+
+              <div>
+                <label
+                  className={`block font-bold mb-1 ${
+                    isDarkMode ? 'text-slate-300' : 'text-slate-700'
+                  }`}
+                >
+                  Email
+                </label>
+                <input 
+                  type="email" 
+                  name="email" 
+                  value={editFormData.email} 
+                  disabled
+                  className={`w-full px-3 py-2 border rounded-xl cursor-not-allowed ${
+                    isDarkMode
+                      ? 'border-slate-800 bg-slate-950 text-slate-500'
+                      : 'border-slate-200 bg-slate-100 text-slate-400'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label
+                  className={`block font-bold mb-1 ${
+                    isDarkMode ? 'text-slate-300' : 'text-slate-700'
+                  }`}
+                >
+                  Mobile Number
+                </label>
+                <input 
+                  type="text" 
+                  name="mobile" 
+                  value={editFormData.mobile} 
+                  onChange={handleInputChange} 
+                  className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:border-blue-500 ${
+                    isDarkMode
+                      ? 'border-slate-700 bg-slate-900 text-slate-100'
+                      : 'border-slate-300 bg-slate-50 text-slate-800'
+                  }`}
+                  required
+                />
+              </div>
+
+              {/* Date of Birth Field */}
+              <div>
+                <label
+                  className={`block font-bold mb-1 ${
+                    isDarkMode ? 'text-slate-300' : 'text-slate-700'
+                  }`}
+                >
+                  Date of Birth
+                </label>
+                <input 
+                  type="date" 
+                  name="date" 
+                  value={editFormData.date} 
+                  onChange={handleInputChange} 
+                  className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:border-blue-500 ${
+                    isDarkMode
+                      ? 'border-slate-700 bg-slate-900 text-slate-100'
+                      : 'border-slate-300 bg-slate-50 text-slate-800'
+                  }`}
+                />
+              </div>
+
+              {/* Gender Selection Field */}
+              <div>
+                <label
+                  className={`block font-bold mb-1 ${
+                    isDarkMode ? 'text-slate-300' : 'text-slate-700'
+                  }`}
+                >
+                  Gender
+                </label>
+                <select
+                  name="gender"
+                  value={editFormData.gender}
+                  onChange={handleInputChange}
+                  className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:border-blue-500 ${
+                    isDarkMode
+                      ? 'border-slate-700 bg-slate-900 text-slate-100'
+                      : 'border-slate-300 bg-slate-50 text-slate-800'
+                  }`}
+                >
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setIsEditOpen(false)}
+                  className={`w-1/2 font-bold py-2 rounded-xl transition ${
+                    isDarkMode
+                      ? 'bg-slate-700 hover:bg-slate-600 text-slate-200'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={updateLoading}
+                  className="w-1/2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl shadow-md transition"
+                >
+                  {updateLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
