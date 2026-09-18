@@ -314,7 +314,10 @@ export default function Navbar() {
                                 </Link>
 
                                 <button
-                                    onClick={handleLogout}
+                                    onClick={() => {
+                                        handleLogout,
+                                            setIsMobileMenuOpen(false)
+                                    }}
                                     className="bg-[#1d6bf3] hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-sm hover:shadow transition duration-200 text-left"
                                 >
                                     Log Out
