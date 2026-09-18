@@ -179,19 +179,17 @@ export default function Flights() {
 
   return (
     <div
-      className={`min-h-screen py-6 px-4 sm:px-6 lg:px-8 transition-colors duration-200 ${
-        isDarkMode ? 'bg-slate-900 text-slate-100 dark' : 'bg-[#f4f7fb] text-slate-800'
-      }`}
+      className={`min-h-screen py-6 px-4 sm:px-6 lg:px-8 transition-colors duration-200 ${isDarkMode ? 'bg-slate-900 text-slate-100 dark' : 'bg-[#f4f7fb] text-slate-800'
+        }`}
     >
       <div className="max-w-7xl mx-auto space-y-5">
 
         {/* Top Search Summary Bar */}
         <div
-          className={`rounded-2xl p-4 shadow-md border flex flex-wrap items-center justify-between gap-4 text-xs sm:text-sm font-semibold transition-colors ${
-            isDarkMode
+          className={`rounded-2xl p-4 shadow-md border flex flex-wrap items-center justify-between gap-4 text-xs sm:text-sm font-semibold transition-colors ${isDarkMode
               ? 'bg-slate-800 border-slate-700 text-slate-200'
               : 'bg-white border-slate-200 text-slate-700'
-          }`}
+            }`}
         >
           <div className="flex items-center gap-3">
             <span className="text-blue-500 text-lg">✈</span>
@@ -225,9 +223,8 @@ export default function Flights() {
 
           {/* Filters Sidebar */}
           <div
-            className={`lg:col-span-3 p-5 rounded-2xl border shadow-md space-y-6 transition-colors ${
-              isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
-            }`}
+            className={`lg:col-span-3 p-5 rounded-2xl border shadow-md space-y-6 transition-colors ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+              }`}
           >
             <h3 className={`font-bold text-sm border-b pb-3 ${isDarkMode ? 'text-white border-slate-700' : 'text-slate-900 border-slate-200'}`}>
               Filters
@@ -242,20 +239,18 @@ export default function Flights() {
                 {AIRLINES_LIST.map((airlineName, idx) => (
                   <label
                     key={idx}
-                    className={`flex items-center justify-between cursor-pointer transition ${
-                      isDarkMode ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                    className={`flex items-center justify-between cursor-pointer transition ${isDarkMode ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
                         checked={selectedAirlines.map(normalizeAirline).includes(normalizeAirline(airlineName))}
                         onChange={() => toggleAirline(airlineName)}
-                        className={`rounded focus:ring-0 focus:ring-offset-0 cursor-pointer ${
-                          isDarkMode
+                        className={`rounded focus:ring-0 focus:ring-offset-0 cursor-pointer ${isDarkMode
                             ? 'border-slate-600 bg-slate-700 text-blue-500'
                             : 'border-slate-300 bg-slate-100 text-blue-600'
-                        }`}
+                          }`}
                       />
                       <span>{airlineName}</span>
                     </div>
@@ -284,9 +279,8 @@ export default function Flights() {
                 step="500"
                 value={priceRange}
                 onChange={(e) => handlePriceChange(e.target.value)}
-                className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:accent-blue-500 ${
-                  isDarkMode ? 'bg-slate-700' : 'bg-slate-200'
-                }`}
+                className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:accent-blue-500 ${isDarkMode ? 'bg-slate-700' : 'bg-slate-200'
+                  }`}
               />
             </div>
           </div>
@@ -295,9 +289,8 @@ export default function Flights() {
           <div className="lg:col-span-9 space-y-4">
             {loading && (
               <div
-                className={`rounded-2xl p-8 border shadow-md text-center text-sm ${
-                  isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
-                }`}
+                className={`rounded-2xl p-8 border shadow-md text-center text-sm ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
+                  }`}
               >
                 Loading flights...
               </div>
@@ -305,9 +298,8 @@ export default function Flights() {
 
             {!loading && error && (
               <div
-                className={`rounded-2xl p-8 border shadow-md text-center text-sm text-red-500 ${
-                  isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
-                }`}
+                className={`rounded-2xl p-8 border shadow-md text-center text-sm text-red-500 ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+                  }`}
               >
                 {error}
               </div>
@@ -315,9 +307,8 @@ export default function Flights() {
 
             {!loading && !error && filteredFlights.length === 0 && (
               <div
-                className={`rounded-2xl p-8 border shadow-md text-center text-sm space-y-1 ${
-                  isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
-                }`}
+                className={`rounded-2xl p-8 border shadow-md text-center text-sm space-y-1 ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
+                  }`}
               >
                 <p className={`font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>No flights found</p>
                 <p>
@@ -350,11 +341,10 @@ export default function Flights() {
                 {paginatedFlights.map((flight) => (
                   <div
                     key={flight._id || flight.id}
-                    className={`rounded-2xl p-5 border shadow-md transition flex flex-col sm:flex-row items-center justify-between gap-4 ${
-                      isDarkMode
+                    className={`rounded-2xl p-5 border shadow-md transition flex flex-col sm:flex-row items-center justify-between gap-4 ${isDarkMode
                         ? 'bg-slate-800 border-slate-700 hover:border-slate-600'
                         : 'bg-white border-slate-200 hover:border-slate-300'
-                    }`}
+                      }`}
                   >
                     {/* Airline Name & Flight Number */}
                     <div className="w-full sm:w-32">
@@ -396,9 +386,8 @@ export default function Flights() {
                     </div>
 
                     {/* Price and Action Button */}
-                    <div className={`flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 ${
-                      isDarkMode ? 'border-slate-700' : 'border-slate-200'
-                    }`}>
+                    <div className={`flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 ${isDarkMode ? 'border-slate-700' : 'border-slate-200'
+                      }`}>
                       <div className="text-right">
                         <span className={`text-lg font-extrabold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                           ₹{flight.price}
@@ -406,7 +395,7 @@ export default function Flights() {
                       </div>
                       <button
                         onClick={() => handleSelectFlight(flight)}
-                        className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs px-6 py-2.5 rounded-xl shadow-md transition shrink-0"
+                        className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs px-6 py-2.5 rounded-xl shadow-md transition shrink-0 cursor-pointer"
                       >
                         Select
                       </button>
@@ -417,16 +406,14 @@ export default function Flights() {
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
                   <div
-                    className={`rounded-2xl p-3 border shadow-md flex items-center justify-center gap-1.5 flex-wrap transition ${
-                      isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
-                    }`}
+                    className={`rounded-2xl p-3 border shadow-md flex items-center justify-center gap-1.5 flex-wrap transition ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+                      }`}
                   >
                     <button
                       onClick={() => goToPage(safeCurrentPage - 1)}
                       disabled={safeCurrentPage === 1}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition ${
-                        isDarkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-100'
-                      }`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition ${isDarkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-100'
+                        }`}
                     >
                       ← Prev
                     </button>
@@ -440,13 +427,12 @@ export default function Flights() {
                         <button
                           key={page}
                           onClick={() => goToPage(page)}
-                          className={`w-8 h-8 rounded-lg text-xs font-semibold transition ${
-                            page === safeCurrentPage
+                          className={`w-8 h-8 rounded-lg text-xs font-semibold transition ${page === safeCurrentPage
                               ? 'bg-blue-600 text-white shadow-md'
                               : isDarkMode
-                              ? 'text-slate-300 hover:bg-slate-700'
-                              : 'text-slate-700 hover:bg-slate-100'
-                          }`}
+                                ? 'text-slate-300 hover:bg-slate-700'
+                                : 'text-slate-700 hover:bg-slate-100'
+                            }`}
                         >
                           {page}
                         </button>
@@ -456,9 +442,8 @@ export default function Flights() {
                     <button
                       onClick={() => goToPage(safeCurrentPage + 1)}
                       disabled={safeCurrentPage === totalPages}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition ${
-                        isDarkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-100'
-                      }`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition ${isDarkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-100'
+                        }`}
                     >
                       Next →
                     </button>
