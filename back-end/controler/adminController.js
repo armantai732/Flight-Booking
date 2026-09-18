@@ -38,3 +38,24 @@ export const getDashboardStats = async (req, res) => {
         });
     }
 };
+
+
+
+export const getuser = async (req, res) => {
+    try {
+        const exits = await User.find();
+
+        return res.status(200).json({
+            status: true,
+            message: "get user",
+            data: exits
+        })
+    } catch (error) {
+        console.error("Dashboard Stats Error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch dashboard statistics"
+        });
+    }
+}

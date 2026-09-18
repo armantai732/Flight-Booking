@@ -1,11 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GetProfile, changePassword } from '../api/api'; // તમારી API જરૂરિયાત મુજબ
+import UserSidebar from '../components/UserSidebar';
+import { GetProfile, changePassword } from '../api/api';
 
 export default function ChangePassword() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('Settings');
   const [user, setUser] = useState(null);
+
+  // 🔹 Read theme from localStorage on initial render
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('appTheme') === 'dark';
+  });
+
+  // 🔹 Listen to real-time theme changes dispatched from ThemeSettings
+  useEffect(() => {
+    const handleThemeChange = () => {
+      const currentTheme = localStorage.getItem('appTheme');
+      setIsDarkMode(currentTheme === 'dark');
+    };
+
+    window.addEventListener('themeChange', handleThemeChange);
+    return () => {
+      window.removeEventListener('themeChange', handleThemeChange);
+    };
+  }, []);
 
   // Form Field States
   const [OldPassword, setOldPassword] = useState('');
@@ -22,9 +40,13 @@ export default function ChangePassword() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const res = await GetProfile();
-      if (res?.status) {
-        setUser(res.data);
+      try {
+        const res = await GetProfile();
+        if (res?.status) {
+          setUser(res.data);
+        }
+      } catch (err) {
+        console.error("Fetch Profile Error:", err);
       }
     };
     fetchProfile();
@@ -32,30 +54,20 @@ export default function ChangePassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     setMessage({ type: '', text: '' });
 
     if (!OldPassword || !newPassword || !confirmPassword) {
-      setMessage({
-        type: 'error',
-        text: 'All fields are required!'
-      });
+      setMessage({ type: 'error', text: 'All fields are required!' });
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setMessage({
-        type: 'error',
-        text: 'New password and confirm password do not match!'
-      });
+      setMessage({ type: 'error', text: 'New password and confirm password do not match!' });
       return;
     }
 
     if (newPassword.length < 8) {
-      setMessage({
-        type: 'error',
-        text: 'Password must be at least 8 characters long.'
-      });
+      setMessage({ type: 'error', text: 'Password must be at least 8 characters long.' });
       return;
     }
 
@@ -65,164 +77,179 @@ export default function ChangePassword() {
       const res = await changePassword({
         oldPassword: OldPassword,
         newPassword: newPassword,
-        confirmPassword: confirmPassword
+        confirmPassword: confirmPassword,
       });
-
 
       if (res?.success || res?.status) {
         setMessage({
           type: 'success',
-          text: res.message || 'Password updated successfully!'
+          text: res.message || 'Password updated successfully!',
         });
-
         setOldPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
         setMessage({
           type: 'error',
-          text: res?.message || 'Failed to update password.'
+          text: res?.message || 'Failed to update password.',
         });
       }
-
     } catch (err) {
       console.error("Change Password Error:", err);
-
       setMessage({
         type: 'error',
-        text: err.message || 'Something went wrong. Please try again.'
+        text: err.message || 'Something went wrong. Please try again.',
       });
-
     } finally {
       setLoading(false);
     }
   };
 
-  const sidebarMenu = [
-    { name: 'Profile', icon: '👤', path: '/profile' },
-    { name: 'My Bookings', icon: '📅', path: '/my-bookings' },
-    { name: 'Saved Passengers', icon: '👥', path: '/passengers' },
-    { name: 'Wallet', icon: '👛', path: '/wallet' },
-    { name: 'Settings', icon: '⚙️', path: '/settings' },
-  ];
-
   return (
-    <div className="bg-[#f4f7fb] min-h-screen font-sans">
+    <div
+      className={`min-h-screen font-sans transition-colors duration-200 ${
+        isDarkMode
+          ? 'bg-slate-900 text-slate-100 dark'
+          : 'bg-[#f4f7fb] text-slate-800'
+      }`}
+    >
       <div className="max-w-7xl mx-auto p-6 md:p-8">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
           {/* LEFT SIDEBAR */}
-          <div className="md:col-span-3 space-y-6">
-            {/* Menu List */}
-            <div className="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm space-y-1">
-              {sidebarMenu.map((item) => (
-                <button
-                  key={item.name}
-                  onClick={() => {
-                    setActiveTab(item.name);
-                    navigate(item.path);
-                  }}
-                  className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-semibold transition duration-200 ${activeTab === item.name
-                    ? 'bg-blue-50 text-blue-600 font-bold'
-                    : 'text-slate-600 hover:bg-slate-50'
-                    }`}
-                >
-                  <span className="text-base">{item.icon}</span>
-                  <span>{item.name}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Promo Card */}
-            <div
-              className="relative rounded-2xl p-6 text-white bg-cover bg-center h-48 flex flex-col justify-between overflow-hidden shadow-sm"
-              style={{
-                backgroundImage: `linear-gradient(to top, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.2)), url('https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=600&q=80')`,
-              }}
-            >
-              <div>
-                <h3 className="font-extrabold text-sm leading-tight">Explore the World With FlyHigh</h3>
-                <p className="text-[11px] text-gray-200 mt-1 font-medium">Better journeys. Happier you.</p>
-              </div>
-            </div>
+          <div className="lg:col-span-3">
+            <UserSidebar />
           </div>
 
           {/* RIGHT MAIN CONTENT */}
-          <div className="md:col-span-9 space-y-6">
+          <div className="lg:col-span-9 space-y-6">
 
-            {/* HERO PROFILE BANNER */}
+            {/* HEADER WITH BACK BUTTON */}
             <div
-              className="relative rounded-2xl p-6 text-white bg-cover bg-center shadow-sm flex items-center justify-between min-h-[140px]"
-              style={{
-                backgroundImage: `linear-gradient(to right, rgba(11, 37, 69, 0.95), rgba(11, 37, 69, 0.4)), url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1200&q=80')`,
-              }}
+              className={`p-6 rounded-2xl border shadow-sm flex items-center gap-4 transition-colors ${
+                isDarkMode
+                  ? 'bg-slate-800 border-slate-700/80'
+                  : 'bg-white border-slate-200'
+              }`}
             >
-              <div className="flex items-center gap-5">
-                <div className="w-16 h-16 rounded-full bg-white/90 text-slate-700 flex items-center justify-center text-3xl font-bold shadow-md">
-                  👤
-                </div>
-                <div className="space-y-1">
-                  <h2 className="text-xl font-extrabold tracking-tight">{user?.name || "Loading..."}</h2>
-                  <p className="text-xs text-gray-200 flex items-center gap-2 font-medium">
-                    <span>✉️</span> {user?.email || "Loading..."}
-                  </p>
-                  <p className="text-xs text-gray-200 flex items-center gap-2 font-medium">
-                    <span>📞</span> +91 {user?.mobile || "Loading..."}
-                  </p>
-                </div>
-              </div>
-
-              <div className="hidden lg:block text-right pr-4">
-                <p className="italic font-serif text-sm opacity-90">Good Flights Take You to Great Places</p>
+              <button
+                onClick={() => navigate('/settings')}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold border transition shrink-0 ${
+                  isDarkMode
+                    ? 'bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                }`}
+                title="Back to Settings"
+              >
+                ←
+              </button>
+              <div>
+                <h1
+                  className={`text-xl font-black tracking-tight ${
+                    isDarkMode ? 'text-slate-100' : 'text-slate-900'
+                  }`}
+                >
+                  Change Password
+                </h1>
+                <p
+                  className={`text-xs font-semibold mt-0.5 ${
+                    isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                  }`}
+                >
+                  Keep your account secure with a strong password
+                </p>
               </div>
             </div>
 
-            {/* CHANGE PASSWORD CARD FORM */}
-            <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-100 shadow-sm space-y-6">
-
-              {/* Header Title with Lock Icon */}
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0">
-                  🔒
+            {/* HERO PROFILE BANNER */}
+            <div
+              className={`relative rounded-2xl p-6 text-white bg-cover bg-center shadow-sm flex items-center justify-between min-h-[120px] border ${
+                isDarkMode ? 'border-slate-800' : 'border-slate-200'
+              }`}
+              style={{
+                backgroundImage: `linear-gradient(to right, rgba(2, 6, 23, 0.95), rgba(2, 6, 23, 0.6)), url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1200&q=80')`,
+              }}
+            >
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 rounded-full bg-slate-800/80 border-2 border-slate-700 text-slate-200 flex items-center justify-center text-2xl font-bold shadow-md">
+                  👤
                 </div>
-                <div>
-                  <h3 className="text-lg font-extrabold text-slate-900">Change Password</h3>
-                  <p className="text-xs text-slate-400 font-medium mt-0.5">
-                    Keep your account secure. Choose a strong password.
+                <div className="space-y-0.5">
+                  <h2 className="text-lg font-extrabold tracking-tight">
+                    {user?.name || "Loading..."}
+                  </h2>
+                  <p className="text-xs text-slate-300 flex items-center gap-2 font-medium">
+                    ✉️ {user?.email || "Loading..."}
                   </p>
                 </div>
               </div>
+            </div>
 
+            {/* FORM CARD */}
+            <div
+              className={`rounded-2xl p-6 md:p-8 border shadow-sm space-y-6 transition-colors ${
+                isDarkMode
+                  ? 'bg-slate-800 border-slate-700/80'
+                  : 'bg-white border-slate-200'
+              }`}
+            >
               {/* Alert Message */}
               {message.text && (
-                <div className={`p-3 rounded-xl text-xs font-semibold ${message.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'
-                  }`}>
+                <div
+                  className={`p-3.5 rounded-xl text-xs font-bold transition-all ${
+                    message.type === 'success'
+                      ? isDarkMode
+                        ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/60'
+                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : isDarkMode
+                      ? 'bg-red-950/60 text-red-400 border border-red-800/60'
+                      : 'bg-red-50 text-red-700 border border-red-200'
+                  }`}
+                >
                   {message.text}
                 </div>
               )}
 
               {/* Form */}
-              <form onSubmit={handleSubmit} className="space-y-5 max-w-3xl">
+              <form onSubmit={handleSubmit} className="space-y-5 max-w-lg">
 
                 {/* Current Password */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  <label
+                    className={`block text-xs font-bold mb-1.5 ${
+                      isDarkMode ? 'text-slate-300' : 'text-slate-700'
+                    }`}
+                  >
                     Current Password
                   </label>
                   <div className="relative flex items-center">
-                    <span className="absolute left-3.5 text-slate-400 text-sm">🔒</span>
+                    <span
+                      className={`absolute left-3.5 text-sm ${
+                        isDarkMode ? 'text-slate-500' : 'text-slate-400'
+                      }`}
+                    >
+                      🔒
+                    </span>
                     <input
                       type={showCurrent ? "text" : "password"}
                       value={OldPassword}
                       onChange={(e) => setOldPassword(e.target.value)}
                       placeholder="Enter your current password"
                       required
-                      className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-blue-600 font-medium text-slate-800 placeholder-slate-400 bg-slate-50/30 focus:bg-white transition"
+                      className={`w-full pl-10 pr-10 py-2.5 rounded-xl border text-xs focus:outline-none focus:border-blue-500 font-semibold transition ${
+                        isDarkMode
+                          ? 'border-slate-700 text-slate-100 placeholder-slate-500 bg-slate-900'
+                          : 'border-slate-200 text-slate-800 placeholder-slate-400 bg-slate-50'
+                      }`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowCurrent(!showCurrent)}
-                      className="absolute right-3.5 text-slate-400 hover:text-slate-600 text-xs focus:outline-none"
+                      className={`absolute right-3.5 text-xs focus:outline-none ${
+                        isDarkMode
+                          ? 'text-slate-400 hover:text-slate-200'
+                          : 'text-slate-400 hover:text-slate-600'
+                      }`}
                     >
                       {showCurrent ? "👁️" : "🙈"}
                     </button>
@@ -231,66 +258,117 @@ export default function ChangePassword() {
 
                 {/* New Password */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  <label
+                    className={`block text-xs font-bold mb-1.5 ${
+                      isDarkMode ? 'text-slate-300' : 'text-slate-700'
+                    }`}
+                  >
                     New Password
                   </label>
                   <div className="relative flex items-center">
-                    <span className="absolute left-3.5 text-slate-400 text-sm">🔒</span>
+                    <span
+                      className={`absolute left-3.5 text-sm ${
+                        isDarkMode ? 'text-slate-500' : 'text-slate-400'
+                      }`}
+                    >
+                      🔒
+                    </span>
                     <input
                       type={showNew ? "text" : "password"}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Enter your new password"
                       required
-                      className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-blue-600 font-medium text-slate-800 placeholder-slate-400 bg-slate-50/30 focus:bg-white transition"
+                      className={`w-full pl-10 pr-10 py-2.5 rounded-xl border text-xs focus:outline-none focus:border-blue-500 font-semibold transition ${
+                        isDarkMode
+                          ? 'border-slate-700 text-slate-100 placeholder-slate-500 bg-slate-900'
+                          : 'border-slate-200 text-slate-800 placeholder-slate-400 bg-slate-50'
+                      }`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowNew(!showNew)}
-                      className="absolute right-3.5 text-slate-400 hover:text-slate-600 text-xs focus:outline-none"
+                      className={`absolute right-3.5 text-xs focus:outline-none ${
+                        isDarkMode
+                          ? 'text-slate-400 hover:text-slate-200'
+                          : 'text-slate-400 hover:text-slate-600'
+                      }`}
                     >
                       {showNew ? "👁️" : "🙈"}
                     </button>
                   </div>
-                  <p className="text-[11px] text-slate-400 font-medium mt-1">
-                    Password must be at least 8 characters and include a number & letter.
+                  <p
+                    className={`text-[11px] font-medium mt-1 ${
+                      isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                    }`}
+                  >
+                    Password must be at least 8 characters long.
                   </p>
                 </div>
 
                 {/* Confirm New Password */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  <label
+                    className={`block text-xs font-bold mb-1.5 ${
+                      isDarkMode ? 'text-slate-300' : 'text-slate-700'
+                    }`}
+                  >
                     Confirm New Password
                   </label>
                   <div className="relative flex items-center">
-                    <span className="absolute left-3.5 text-slate-400 text-sm">🔒</span>
+                    <span
+                      className={`absolute left-3.5 text-sm ${
+                        isDarkMode ? 'text-slate-500' : 'text-slate-400'
+                      }`}
+                    >
+                      🔒
+                    </span>
                     <input
                       type={showConfirm ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Re-enter your new password"
                       required
-                      className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-blue-600 font-medium text-slate-800 placeholder-slate-400 bg-slate-50/30 focus:bg-white transition"
+                      className={`w-full pl-10 pr-10 py-2.5 rounded-xl border text-xs focus:outline-none focus:border-blue-500 font-semibold transition ${
+                        isDarkMode
+                          ? 'border-slate-700 text-slate-100 placeholder-slate-500 bg-slate-900'
+                          : 'border-slate-200 text-slate-800 placeholder-slate-400 bg-slate-50'
+                      }`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirm(!showConfirm)}
-                      className="absolute right-3.5 text-slate-400 hover:text-slate-600 text-xs focus:outline-none"
+                      className={`absolute right-3.5 text-xs focus:outline-none ${
+                        isDarkMode
+                          ? 'text-slate-400 hover:text-slate-200'
+                          : 'text-slate-400 hover:text-slate-600'
+                      }`}
                     >
                       {showConfirm ? "👁️" : "🙈"}
                     </button>
                   </div>
                 </div>
 
-                {/* Submit Button */}
-                <div className="pt-2">
+                {/* Action Buttons */}
+                <div className="pt-3 flex gap-3">
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-3.5 px-6 rounded-xl shadow-md transition duration-200 disabled:opacity-70"
+                    className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-6 py-2.5 rounded-xl transition shadow-md disabled:opacity-50"
                   >
-                    <span className="text-sm">🔄</span>
-                    <span>{loading ? 'Updating Password...' : 'Update Password'}</span>
+                    {loading ? 'Updating Password...' : 'Update Password'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate('/settings')}
+                    className={`font-bold text-xs px-5 py-2.5 rounded-xl transition border ${
+                      isDarkMode
+                        ? 'bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                    }`}
+                  >
+                    Cancel
                   </button>
                 </div>
 

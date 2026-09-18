@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 export default function AdminSidebar() {
 
@@ -18,9 +19,9 @@ export default function AdminSidebar() {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
 
-    alert("Logged out!");
+    toast.success("Logged out!");
 
-    navigate("/admin/login");
+    navigate("/login");
   };
 
   const isDashboardActive =
@@ -36,7 +37,7 @@ export default function AdminSidebar() {
     location.pathname === "/admin/bookings";
 
   const isUsersActive =
-    location.pathname === "/admin/users";
+    location.pathname === "/admin/user";
 
   const isSettingsActive =
     location.pathname === "/admin/settings";
@@ -154,7 +155,7 @@ export default function AdminSidebar() {
 
         <button
           type="button"
-          // onClick={() => navigate("/admin/users")}
+          onClick={() => navigate("/admin/user")}
           className={` w-full flex items-center gap-3 px-4 py-3 rounded-xl transition
 
             ${isUsersActive

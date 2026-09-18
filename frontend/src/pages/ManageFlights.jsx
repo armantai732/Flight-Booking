@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
-import { DeleteFlight, GetFlight } from '../api/api';
+import { DeleteFlight, GetFlight, updateFlight } from '../api/api';
+import { toast } from 'react-toastify';
 
 export default function ManageFlights() {
   const navigate = useNavigate();
@@ -18,6 +19,10 @@ export default function ManageFlights() {
   const [selectedTo, setSelectedTo] = useState('All Cities');
   const [selectedStatus, setSelectedStatus] = useState('All');
 
+  // Edit Modal State
+  const [editingFlight, setEditingFlight] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
+
   // Reset Filters
   const handleReset = () => {
     setSearch('');
@@ -27,7 +32,6 @@ export default function ManageFlights() {
     setSelectedStatus('All');
     setCurrentPage(1);
   };
-
 
   // Filter Logic
   const filteredFlights = flights.filter((flight) => {
@@ -48,101 +52,103 @@ export default function ManageFlights() {
       selectedAirline === "All Airlines" ||
       airline === selectedAirline;
 
-    // From filter
     const matchesFrom =
       selectedFrom === "All Cities" ||
       from.toLowerCase() === selectedFrom.toLowerCase();
 
-    // To filter
     const matchesTo =
       selectedTo === "All Cities" ||
       to.toLowerCase() === selectedTo.toLowerCase();
 
-
     return matchesSearch && matchesAirline && matchesFrom && matchesTo;
   });
 
-
   // Pagination
   const totalPages = Math.ceil(filteredFlights.length / flightsPerPage);
-
   const startIndex = (currentPage - 1) * flightsPerPage;
   const endIndex = startIndex + flightsPerPage;
-
   const currentFlights = filteredFlights.slice(startIndex, endIndex);
 
-
   useEffect(() => {
-    const fetchFlights = async () => {
-      try {
-        setLoading(true);
-
-        const res = await GetFlight();
-
-        // Adjust this depending on your API response structure
-        setFlights(res.Flight || []);
-      } catch (err) {
-        console.error('Error fetching flights:', err);
-        setError('Failed to load flights.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchFlights();
   }, []);
 
+  const fetchFlights = async () => {
+    try {
+      setLoading(true);
+      const res = await GetFlight();
+      setFlights(res.Flight || res.flights || res.data || []);
+    } catch (err) {
+      console.error('Error fetching flights:', err);
+      setError('Failed to load flights.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // DELETE FUNCTION
   const handleDelete = async (id) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this flight?"
     );
 
-    if (!confirmDelete) {
-      return;
-    }
+    if (!confirmDelete) return;
 
     try {
       const res = await DeleteFlight(id);
 
-      console.log("Delete Response:", res);
-
       if (res.status || res.success) {
-        alert(res.message || "Flight deleted successfully");
-
-        // UI se bhi flight remove
+        toast.success(res.message || "Flight deleted successfully");
         setFlights((prevFlights) =>
           prevFlights.filter((flight) => flight._id !== id)
         );
       } else {
-        alert(res.message || "Failed to delete flight");
+        toast.error(res.message || "Failed to delete flight");
       }
-
     } catch (error) {
       console.error("Delete Flight Error:", error);
-      alert(error.message || "Something went wrong");
+      toast.error(error.message || "Something went wrong");
     }
   };
 
+  // EDIT / UPDATE FUNCTIONS
+  const handleEditClick = (flight) => {
+    setEditingFlight(flight);
+    setEditFormData({ ...flight });
+  };
 
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
+  const handleUpdateSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await updateFlight(editingFlight._id, editFormData);
+      
+      toast.success(res.message || "Flight updated successfully");
+      
+      // Update local state without full re-fetch
+      setFlights((prev) =>
+        prev.map((f) => (f._id === editingFlight._id ? { ...f, ...editFormData } : f))
+      );
+
+      setEditingFlight(null);
+    } catch (error) {
+      console.error("Update Flight Error:", error);
+      toast.error(error.message || "Failed to update flight");
+    }
+  };
 
   return (
     <div className="flex h-screen bg-[#f4f7fb] font-sans overflow-hidden">
-
-      {/* 1. LEFT SIDEBAR */}
       <aside>
         <AdminSidebar />
       </aside>
 
-      {/* RIGHT MAIN CONTAINER */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-
-
-
-        {/* PAGE CONTENT */}
         <main className="p-8 space-y-10">
-
           {/* Header & Add Button */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -165,26 +171,21 @@ export default function ManageFlights() {
           {/* FILTER BAR CARD */}
           <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3 items-center text-xs">
-
-              {/* Search Bar */}
               <div className="md:col-span-4 relative">
                 <label className="block text-[10px] text-slate-400 font-bold mb-0.5 pl-1">Search</label>
                 <span className="absolute left-3.5 top-7 text-slate-400">🔍</span>
                 <input
                   type="text"
                   value={search}
-                  onChange={
-                    (e) => {
-                      setSearch(e.target.value);
-                      setCurrentPage(1);
-                    }
-                  }
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   placeholder="Search by Airline, Flight No, From, To..."
                   className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 text-slate-700 font-medium placeholder-slate-400"
                 />
               </div>
 
-              {/* Airline Select */}
               <div className="md:col-span-2">
                 <label className="block text-[10px] text-slate-400 font-bold mb-0.5 pl-1">Airline</label>
                 <select
@@ -204,14 +205,13 @@ export default function ManageFlights() {
                 </select>
               </div>
 
-              {/* From Select */}
               <div className="md:col-span-2">
                 <label className="block text-[10px] text-slate-400 font-bold mb-0.5 pl-1">From</label>
                 <select
                   value={selectedFrom}
                   onChange={(e) => {
                     setSelectedFrom(e.target.value);
-                    setCurrentPage(1)
+                    setCurrentPage(1);
                   }}
                   className="w-full p-2 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 text-slate-700 font-medium bg-white"
                 >
@@ -223,14 +223,13 @@ export default function ManageFlights() {
                 </select>
               </div>
 
-              {/* To Select */}
               <div className="md:col-span-2">
                 <label className="block text-[10px] text-slate-400 font-bold mb-0.5 pl-1">To</label>
                 <select
                   value={selectedTo}
                   onChange={(e) => {
                     setSelectedTo(e.target.value);
-                    setCurrentPage(1)
+                    setCurrentPage(1);
                   }}
                   className="w-full p-2 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 text-slate-700 font-medium bg-white"
                 >
@@ -242,24 +241,6 @@ export default function ManageFlights() {
                 </select>
               </div>
 
-              {/* Status Select */}
-              {/* <div className="md:col-span-1">
-                <label className="block text-[10px] text-slate-400 font-bold mb-0.5 pl-1">Status</label>
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => {
-                    setSelectedStatus(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="w-full p-2 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 text-slate-700 font-medium bg-white"
-                >
-                  <option value="All">All</option>
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div> */}
-
-              {/* Reset Button */}
               <div className="md:col-span-1 pt-3.5">
                 <button
                   onClick={handleReset}
@@ -268,7 +249,6 @@ export default function ManageFlights() {
                   ↻ Reset
                 </button>
               </div>
-
             </div>
           </div>
 
@@ -288,7 +268,6 @@ export default function ManageFlights() {
                     <th className="py-3.5 px-4">Date</th>
                     <th className="py-3.5 px-4">Price</th>
                     <th className="py-3.5 px-4">Baggage</th>
-                    {/* <th className="py-3.5 px-4">Status</th> */}
                     <th className="py-3.5 px-4 text-center">Actions</th>
                   </tr>
                 </thead>
@@ -307,27 +286,22 @@ export default function ManageFlights() {
                         <td className="py-3 px-4 font-extrabold text-slate-900">{flight.FLightNumber}</td>
                         <td className="py-3 px-4 font-bold">{flight.airline}</td>
                         <td className="py-3 px-4 text-slate-500">{flight.Aircraft}</td>
-                        <td className="py-3 px-4 text-slate-800 font-semibold flex">{flight.from} ➔ {flight.to}</td>
+                        <td className="py-3 px-4 text-slate-800 font-semibold">{flight.from} ➔ {flight.to}</td>
                         <td className="py-3 px-4 text-slate-600">{flight.departureTime} - {flight.arrivalTime}</td>
                         <td className="py-3 px-4 text-slate-500">{flight.date}</td>
                         <td className="py-3 px-4 font-extrabold text-slate-900">₹{flight.price}</td>
                         <td className="py-3 px-4 text-slate-500">{flight.Baggage}</td>
-                        {/* <td className="py-3 px-4">
-                          <span className="bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full text-[10px] font-bold border border-emerald-100">
-                            {flight.status}
-                          </span>
-                        </td> */}
                         <td className="py-3 px-4">
                           <div className="flex items-center justify-center gap-2">
-                            {/* Edit Button */}
+                            {/* EDIT BUTTON (Opens Modal) */}
                             <button
-                              onClick={() => navigate(`/admin/edit-flight/${flight.id}`)}
+                              onClick={() => handleEditClick(flight)}
                               className="w-7 h-7 rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition text-xs shadow-sm"
                               title="Edit"
                             >
                               ✏️
                             </button>
-                            {/* Delete Button */}
+                            {/* DELETE BUTTON */}
                             <button
                               onClick={() => handleDelete(flight._id)}
                               className="w-7 h-7 rounded-lg bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition text-xs shadow-sm"
@@ -341,7 +315,7 @@ export default function ManageFlights() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="12" className="py-8 text-center text-slate-400 font-semibold">
+                      <td colSpan="11" className="py-8 text-center text-slate-400 font-semibold">
                         No flights found matching your search.
                       </td>
                     </tr>
@@ -357,8 +331,6 @@ export default function ManageFlights() {
               </div>
 
               <div className="flex items-center gap-1">
-
-                {/* Previous */}
                 <button
                   onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
@@ -367,41 +339,128 @@ export default function ManageFlights() {
                   ‹
                 </button>
 
-                {/* Page Numbers */}
-                {Array.from({ length: totalPages }, (_, index) => index + 1).map(
-                  (page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`w-7 h-7 flex items-center justify-center rounded-lg font-bold ${currentPage === page
+                {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-7 h-7 flex items-center justify-center rounded-lg font-bold ${
+                      currentPage === page
                         ? 'bg-blue-600 text-white shadow-sm'
                         : 'border border-slate-200 text-slate-500 hover:bg-slate-50'
-                        }`}
-                    >
-                      {page}
-                    </button>
-                  )
-                )}
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
 
-                {/* Next */}
                 <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages || totalPages === 0}
                   className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   ›
                 </button>
-
               </div>
             </div>
-
           </div>
-
         </main>
       </div>
 
+      {/* EDIT FLIGHT MODAL */}
+      {editingFlight && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 border border-slate-100 space-y-4">
+            <div className="flex justify-between items-center border-b pb-3">
+              <h2 className="text-lg font-bold text-slate-800">Edit Flight</h2>
+              <button
+                onClick={() => setEditingFlight(null)}
+                className="text-slate-400 hover:text-slate-600 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateSubmit} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">Flight Number</label>
+                <input
+                  type="text"
+                  name="FLightNumber"
+                  value={editFormData.FLightNumber || ''}
+                  onChange={handleEditChange}
+                  className="w-full p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-600"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">Airline</label>
+                <input
+                  type="text"
+                  name="airline"
+                  value={editFormData.airline || ''}
+                  onChange={handleEditChange}
+                  className="w-full p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-600"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">From</label>
+                  <input
+                    type="text"
+                    name="from"
+                    value={editFormData.from || ''}
+                    onChange={handleEditChange}
+                    className="w-full p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-600"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">To</label>
+                  <input
+                    type="text"
+                    name="to"
+                    value={editFormData.to || ''}
+                    onChange={handleEditChange}
+                    className="w-full p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-600"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">Price (₹)</label>
+                <input
+                  type="number"
+                  name="price"
+                  value={editFormData.price || ''}
+                  onChange={handleEditChange}
+                  className="w-full p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-600"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <button
+                  type="button"
+                  onClick={() => setEditingFlight(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -27,7 +27,6 @@ export default function Footer() {
               {['f', 'ig', 'X', 'yt', 'in'].map((icon, idx) => (
                 <a
                   key={idx}
-                  href="#"
                   className="w-8 h-8 rounded-full bg-white/10 hover:bg-blue-600 transition flex items-center justify-center text-xs font-bold text-white border border-white/10"
                 >
                   {icon}
@@ -42,7 +41,7 @@ export default function Footer() {
             <ul className="space-y-2 text-xs text-gray-300">
               <li><Link to="/" className="hover:text-blue-400 transition">Home</Link></li>
               <li><Link to="/flights" className="hover:text-blue-400 transition">Flights</Link></li>
-              <li><a href="#" className="hover:text-blue-400 transition">My Bookings</a></li>
+              <li><Link to="/my-bookings" className="hover:text-blue-400 transition">My Bookings</Link></li>
               <li><Link to="/about" className="hover:text-blue-400 transition">About</Link></li>
               <li><Link to="/contact" className="hover:text-blue-400 transition">Contact</Link></li>
             </ul>

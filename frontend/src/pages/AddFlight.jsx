@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import { AddFlightAdmin } from '../api/api';
+import { toast } from "react-toastify";
 
 export default function AddFlight() {
   const navigate = useNavigate();
@@ -67,7 +68,7 @@ export default function AddFlight() {
     try {
 
       if (!imageFile) {
-        alert("Please select flight image");
+        toast.error("Please select flight image");
         return;
       }
 
@@ -93,7 +94,7 @@ export default function AddFlight() {
       const res = await AddFlightAdmin(formData);
 
       if (res.status) {
-        alert(res.message);
+        toast.success(res.message);
 
         setform({
           airline: '',
@@ -113,12 +114,12 @@ export default function AddFlight() {
         setImageFile(null);
 
       } else {
-        alert(res.message);
+        toast.error(res.message);
       }
 
     } catch (error) {
       console.log("Add Flight Error:", error);
-      alert(error.message || "Failed to add flight");
+      toast.error(error.message || "Failed to add flight");
     }
   };
 

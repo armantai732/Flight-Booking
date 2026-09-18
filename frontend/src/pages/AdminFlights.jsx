@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 export default function AdminFlights() {
   const navigate = useNavigate();
@@ -73,8 +74,8 @@ export default function AdminFlights() {
 
           <button 
             onClick={() => {
-              alert('Logged out!');
-              navigate('/admin/login');
+              toast.success('Logged out!');
+              navigate('/login');
             }}
             className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-semibold text-slate-300 hover:bg-red-500/20 hover:text-red-400 transition duration-200 mt-8"
           >
@@ -90,7 +91,7 @@ export default function AdminFlights() {
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-extrabold text-slate-900">Manage Flights</h1>
             <button 
-              onClick={() => alert('Add Flight Modal / Page')}
+              onClick={() => toast.success('Add Flight Modal / Page')}
               className="bg-[#1d6bf3] hover:bg-blue-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-md transition duration-200"
             >
               Add Flight
@@ -126,7 +127,7 @@ export default function AdminFlights() {
                       <td className="py-4 px-3">
                         <div className="flex items-center justify-center gap-2">
                           <button 
-                            onClick={() => alert(`Edit ${flight.airline}`)}
+                            onClick={() => toast.success(`Edit ${flight.airline}`)}
                             className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center text-xs transition"
                           >
                             ✏️

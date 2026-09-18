@@ -10,14 +10,29 @@ export default function Flights() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // 🔹 Read theme state from localStorage on initial render
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('appTheme') === 'dark';
+  });
+
+  // 🔹 Synchronize real-time theme changes across components
+  useEffect(() => {
+    const handleThemeChange = () => {
+      const currentTheme = localStorage.getItem('appTheme');
+      setIsDarkMode(currentTheme === 'dark');
+    };
+
+    window.addEventListener('themeChange', handleThemeChange);
+    return () => {
+      window.removeEventListener('themeChange', handleThemeChange);
+    };
+  }, []);
+
   // Search params passed from Hero.jsx ({ from, to, departureDate, returnDate, tripType })
   const searchState = location.state || {};
-  const { from, to, departureDate, tripType } = searchState;
+  const { from, to, departureDate } = searchState;
 
-  // --- Filters & pagination now live in the URL, not local state ---
-  // This is what makes the Back button restore exactly where you left off:
-  // going back in history restores the previous URL, and we read state from it.
-
+  // --- Filters & pagination from URL ---
   const pageFromUrl = parseInt(searchParams.get('page'), 10);
   const currentPage = Number.isNaN(pageFromUrl) || pageFromUrl < 1 ? 1 : pageFromUrl;
 
@@ -35,10 +50,7 @@ export default function Flights() {
     const fetchFlights = async () => {
       try {
         setLoading(true);
-
         const res = await GetFlight();
-
-        // Adjust this depending on your API response structure
         setFlights(res.Flight || []);
       } catch (err) {
         console.error('Error fetching flights:', err);
@@ -51,7 +63,6 @@ export default function Flights() {
     fetchFlights();
   }, []);
 
-  // Small helper to patch just a few keys of the URL search params, keeping the rest intact
   const updateParams = (patch) => {
     const next = new URLSearchParams(searchParams);
     Object.entries(patch).forEach(([key, value]) => {
@@ -64,35 +75,25 @@ export default function Flights() {
     setSearchParams(next, { replace: false, state: location.state });
   };
 
-  // Extract just the city name from "Delhi (DEL)" -> "delhi" for matching against flight.from/to
   const getCityName = (value) => (value ? value.split(' (')[0].trim().toLowerCase() : null);
 
-  // Convert a "DD/MM/YYYY" string (as stored in DB) to "YYYY-MM-DD" (as given by <input type="date">)
-  // so both sides can be compared as plain strings.
   const normalizeToISO = (dateStr) => {
     if (!dateStr) return null;
-
-    // already in ISO format (YYYY-MM-DD)
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-
-    // DB format DD/MM/YYYY
     if (dateStr.includes('/')) {
       const [day, month, year] = dateStr.split('/');
       if (!day || !month || !year) return null;
       return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     }
-
     return null;
   };
 
-  // Normalize an airline name for safe comparison (handles case/spacing differences from the DB)
   const normalizeAirline = (name) => (name ? name.trim().toLowerCase() : '');
 
   const fromCity = getCityName(from);
   const toCity = getCityName(to);
-  const searchDateISO = departureDate || null; // already "YYYY-MM-DD" from the date input
+  const searchDateISO = departureDate || null;
 
-  // First apply route + date filter (this is what the airline counts are based on)
   const routeDateFilteredFlights = flights.filter((flight) => {
     const flightFrom = flight.from?.trim().toLowerCase();
     const flightTo = flight.to?.trim().toLowerCase();
@@ -104,7 +105,6 @@ export default function Flights() {
     return matchesRoute && matchesDate;
   });
 
-  // Count how many flights (matching route/date) exist per airline, for the sidebar counts
   const airlineCounts = AIRLINES_LIST.reduce((acc, airline) => {
     acc[airline] = routeDateFilteredFlights.filter(
       (f) => normalizeAirline(f.airline) === normalizeAirline(airline)
@@ -114,7 +114,6 @@ export default function Flights() {
 
   const normalizedSelectedAirlines = selectedAirlines.map(normalizeAirline);
 
-  // Now apply airline + price filters on top
   const filteredFlights = routeDateFilteredFlights.filter((flight) => {
     const matchesAirline =
       selectedAirlines.length === 0 ||
@@ -136,7 +135,6 @@ export default function Flights() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Toggle a single airline checkbox on/off — writes straight to the URL and resets to page 1
   const toggleAirline = (name) => {
     const isSelected = selectedAirlines.map(normalizeAirline).includes(normalizeAirline(name));
     const next = isSelected
@@ -150,12 +148,10 @@ export default function Flights() {
     updateParams({ price: value, page: 1 });
   };
 
-  // Handle Select Flight Button Click
   const handleSelectFlight = (flight) => {
     navigate('/flight-booking', { state: { flight } });
   };
 
-  // Nicely formatted date for display in the summary bar, e.g. "2026-09-12" -> "12 Sep 2026"
   const formatDisplayDate = (isoStr) => {
     if (!isoStr) return null;
     const d = new Date(isoStr);
@@ -163,7 +159,6 @@ export default function Flights() {
     return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
-  // Build a compact page number list with ellipses for large page counts, e.g. 1 ... 4 5 6 ... 12
   const getPageNumbers = () => {
     const pages = [];
     const delta = 1;
@@ -183,28 +178,42 @@ export default function Flights() {
   };
 
   return (
-    <div className="bg-[#f4f7fb] min-h-screen py-6 px-4 sm:px-6 lg:px-8">
+    <div
+      className={`min-h-screen py-6 px-4 sm:px-6 lg:px-8 transition-colors duration-200 ${
+        isDarkMode ? 'bg-slate-900 text-slate-100 dark' : 'bg-[#f4f7fb] text-slate-800'
+      }`}
+    >
       <div className="max-w-7xl mx-auto space-y-5">
 
         {/* Top Search Summary Bar */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4 text-slate-800 text-xs sm:text-sm font-semibold">
+        <div
+          className={`rounded-2xl p-4 shadow-md border flex flex-wrap items-center justify-between gap-4 text-xs sm:text-sm font-semibold transition-colors ${
+            isDarkMode
+              ? 'bg-slate-800 border-slate-700 text-slate-200'
+              : 'bg-white border-slate-200 text-slate-700'
+          }`}
+        >
           <div className="flex items-center gap-3">
-            <span className="text-blue-600 text-lg">✈</span>
-            <span className={from ? '' : 'text-gray-400 font-medium'}>{from || 'Select From'}</span>
-            <span className="text-gray-400">➔</span>
-            <span className={to ? '' : 'text-gray-400 font-medium'}>{to || 'Select To'}</span>
+            <span className="text-blue-500 text-lg">✈</span>
+            <span className={from ? (isDarkMode ? 'text-white' : 'text-slate-900') : 'text-slate-400 font-medium'}>
+              {from || 'Select From'}
+            </span>
+            <span className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>➔</span>
+            <span className={to ? (isDarkMode ? 'text-white' : 'text-slate-900') : 'text-slate-400 font-medium'}>
+              {to || 'Select To'}
+            </span>
           </div>
 
-          <div className="flex items-center gap-6 text-gray-500 font-medium text-xs">
+          <div className="flex items-center gap-6 font-medium text-xs">
             <div className="flex items-center gap-1.5">
               <span>📅</span>
-              <span className={departureDate ? '' : 'text-gray-400'}>
+              <span className={departureDate ? (isDarkMode ? 'text-slate-300' : 'text-slate-600') : 'text-slate-400'}>
                 {formatDisplayDate(departureDate) || 'Select Date'}
               </span>
             </div>
             <button
               onClick={() => navigate('/')}
-              className="text-blue-600 font-semibold hover:underline flex items-center gap-1"
+              className="text-blue-600 dark:text-blue-400 font-semibold hover:underline flex items-center gap-1 transition"
             >
               ✏ Edit Search
             </button>
@@ -215,25 +224,44 @@ export default function Flights() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
           {/* Filters Sidebar */}
-          <div className="lg:col-span-3 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-6">
-            <h3 className="font-bold text-sm text-slate-900 border-b border-gray-100 pb-3">Filters</h3>
+          <div
+            className={`lg:col-span-3 p-5 rounded-2xl border shadow-md space-y-6 transition-colors ${
+              isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+            }`}
+          >
+            <h3 className={`font-bold text-sm border-b pb-3 ${isDarkMode ? 'text-white border-slate-700' : 'text-slate-900 border-slate-200'}`}>
+              Filters
+            </h3>
 
             {/* Airlines */}
             <div>
-              <h4 className="text-xs font-bold text-slate-700 mb-2.5">Airlines</h4>
-              <div className="space-y-2 text-xs text-gray-600">
+              <h4 className={`text-xs font-bold mb-2.5 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                Airlines
+              </h4>
+              <div className="space-y-2 text-xs">
                 {AIRLINES_LIST.map((airlineName, idx) => (
-                  <label key={idx} className="flex items-center justify-between cursor-pointer">
+                  <label
+                    key={idx}
+                    className={`flex items-center justify-between cursor-pointer transition ${
+                      isDarkMode ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
                         checked={selectedAirlines.map(normalizeAirline).includes(normalizeAirline(airlineName))}
                         onChange={() => toggleAirline(airlineName)}
-                        className="rounded text-blue-600 focus:ring-0"
+                        className={`rounded focus:ring-0 focus:ring-offset-0 cursor-pointer ${
+                          isDarkMode
+                            ? 'border-slate-600 bg-slate-700 text-blue-500'
+                            : 'border-slate-300 bg-slate-100 text-blue-600'
+                        }`}
                       />
                       <span>{airlineName}</span>
                     </div>
-                    <span className="text-gray-400 text-[10px]">{airlineCounts[airlineName] ?? 0}</span>
+                    <span className={isDarkMode ? 'text-slate-500 text-[10px]' : 'text-slate-400 text-[10px]'}>
+                      {airlineCounts[airlineName] ?? 0}
+                    </span>
                   </label>
                 ))}
               </div>
@@ -242,8 +270,12 @@ export default function Flights() {
             {/* Price Range */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <h4 className="text-xs font-bold text-slate-700">Price Range</h4>
-                <span className="text-[11px] font-semibold text-blue-600">₹3,000 - ₹{Number(priceRange).toLocaleString()}</span>
+                <h4 className={`text-xs font-bold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                  Price Range
+                </h4>
+                <span className="text-[11px] font-semibold text-blue-500 dark:text-blue-400">
+                  ₹3,000 - ₹{Number(priceRange).toLocaleString()}
+                </span>
               </div>
               <input
                 type="range"
@@ -252,7 +284,9 @@ export default function Flights() {
                 step="500"
                 value={priceRange}
                 onChange={(e) => handlePriceChange(e.target.value)}
-                className="w-full h-1.5 bg-blue-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:accent-blue-500 ${
+                  isDarkMode ? 'bg-slate-700' : 'bg-slate-200'
+                }`}
               />
             </div>
           </div>
@@ -260,28 +294,44 @@ export default function Flights() {
           {/* Flight Listing Cards */}
           <div className="lg:col-span-9 space-y-4">
             {loading && (
-              <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm text-center text-sm text-gray-500">
+              <div
+                className={`rounded-2xl p-8 border shadow-md text-center text-sm ${
+                  isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
+                }`}
+              >
                 Loading flights...
               </div>
             )}
 
             {!loading && error && (
-              <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm text-center text-sm text-red-500">
+              <div
+                className={`rounded-2xl p-8 border shadow-md text-center text-sm text-red-500 ${
+                  isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+                }`}
+              >
                 {error}
               </div>
             )}
 
             {!loading && !error && filteredFlights.length === 0 && (
-              <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm text-center text-sm text-gray-500 space-y-1">
-                <p className="font-semibold text-slate-700">No flights found</p>
+              <div
+                className={`rounded-2xl p-8 border shadow-md text-center text-sm space-y-1 ${
+                  isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
+                }`}
+              >
+                <p className={`font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>No flights found</p>
                 <p>
                   No flights match your current filters
                   {from && to ? (
-                    <> from <span className="font-semibold">{from}</span> to{' '}
-                    <span className="font-semibold">{to}</span></>
+                    <>
+                      {' '}from <span className={`font-semibold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{from}</span> to{' '}
+                      <span className={`font-semibold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{to}</span>
+                    </>
                   ) : null}
                   {departureDate ? (
-                    <> on <span className="font-semibold">{formatDisplayDate(departureDate)}</span></>
+                    <>
+                      {' '}on <span className={`font-semibold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{formatDisplayDate(departureDate)}</span>
+                    </>
                   ) : null}
                   . Try adjusting the airline or price filters.
                 </p>
@@ -291,7 +341,7 @@ export default function Flights() {
             {!loading && !error && filteredFlights.length > 0 && (
               <>
                 {/* Results count */}
-                <div className="text-xs text-gray-500 font-medium px-1">
+                <div className={`text-xs font-medium px-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                   Showing {(safeCurrentPage - 1) * FLIGHTS_PER_PAGE + 1}
                   –{Math.min(safeCurrentPage * FLIGHTS_PER_PAGE, filteredFlights.length)} of{' '}
                   {filteredFlights.length} flights
@@ -300,45 +350,63 @@ export default function Flights() {
                 {paginatedFlights.map((flight) => (
                   <div
                     key={flight._id || flight.id}
-                    className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col sm:flex-row items-center justify-between gap-4"
+                    className={`rounded-2xl p-5 border shadow-md transition flex flex-col sm:flex-row items-center justify-between gap-4 ${
+                      isDarkMode
+                        ? 'bg-slate-800 border-slate-700 hover:border-slate-600'
+                        : 'bg-white border-slate-200 hover:border-slate-300'
+                    }`}
                   >
                     {/* Airline Name & Flight Number */}
                     <div className="w-full sm:w-32">
-                      <span className={`text-base font-extrabold block ${flight.color}`}>
+                      <span className={`text-base font-extrabold block ${flight.color || 'text-blue-600 dark:text-blue-400'}`}>
                         {flight.airline}
                       </span>
-                      <span className="text-[10px] text-gray-400 font-semibold">{flight.Aircraft}</span>
+                      <span className={`text-[10px] font-semibold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {flight.Aircraft}
+                      </span>
                     </div>
 
                     {/* Route and Timings */}
                     <div className="flex items-center gap-6 sm:gap-10 text-center flex-1 justify-center">
                       <div>
-                        <div className="text-base font-bold text-slate-900">{flight.departureTime}</div>
-                        <div className="text-[11px] text-gray-400 font-medium">{flight.from}</div>
+                        <div className={`text-base font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                          {flight.departureTime}
+                        </div>
+                        <div className={`text-[11px] font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {flight.from}
+                        </div>
                       </div>
 
                       <div className="flex flex-col items-center">
                         <div className="flex items-center gap-1 my-0.5">
-                          <div className="w-8 sm:w-12 h-[1px] bg-gray-300"></div>
-                          <span className="text-gray-300 text-xs">✈</span>
-                          <div className="w-8 sm:w-12 h-[1px] bg-gray-300"></div>
+                          <div className={`w-8 sm:w-12 h-[1px] ${isDarkMode ? 'bg-slate-600' : 'bg-slate-300'}`}></div>
+                          <span className={isDarkMode ? 'text-slate-500 text-xs' : 'text-slate-400 text-xs'}>✈</span>
+                          <div className={`w-8 sm:w-12 h-[1px] ${isDarkMode ? 'bg-slate-600' : 'bg-slate-300'}`}></div>
                         </div>
                       </div>
 
                       <div>
-                        <div className="text-base font-bold text-slate-900">{flight.arrivalTime}</div>
-                        <div className="text-[11px] text-gray-400 font-medium">{flight.to}</div>
+                        <div className={`text-base font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                          {flight.arrivalTime}
+                        </div>
+                        <div className={`text-[11px] font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {flight.to}
+                        </div>
                       </div>
                     </div>
 
                     {/* Price and Action Button */}
-                    <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100">
+                    <div className={`flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 ${
+                      isDarkMode ? 'border-slate-700' : 'border-slate-200'
+                    }`}>
                       <div className="text-right">
-                        <span className="text-lg font-extrabold text-slate-900">₹{flight.price}</span>
+                        <span className={`text-lg font-extrabold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                          ₹{flight.price}
+                        </span>
                       </div>
                       <button
                         onClick={() => handleSelectFlight(flight)}
-                        className="bg-[#1d6bf3] hover:bg-blue-700 text-white font-semibold text-xs px-6 py-2.5 rounded-xl shadow-md transition"
+                        className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs px-6 py-2.5 rounded-xl shadow-md transition shrink-0"
                       >
                         Select
                       </button>
@@ -348,18 +416,24 @@ export default function Flights() {
 
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
-                  <div className="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm flex items-center justify-center gap-1.5 flex-wrap">
+                  <div
+                    className={`rounded-2xl p-3 border shadow-md flex items-center justify-center gap-1.5 flex-wrap transition ${
+                      isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+                    }`}
+                  >
                     <button
                       onClick={() => goToPage(safeCurrentPage - 1)}
                       disabled={safeCurrentPage === 1}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition"
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition ${
+                        isDarkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-100'
+                      }`}
                     >
                       ← Prev
                     </button>
 
                     {getPageNumbers().map((page, idx) =>
                       page === '...' ? (
-                        <span key={`dots-${idx}`} className="px-2 text-xs text-gray-400">
+                        <span key={`dots-${idx}`} className={`px-2 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                           …
                         </span>
                       ) : (
@@ -368,8 +442,10 @@ export default function Flights() {
                           onClick={() => goToPage(page)}
                           className={`w-8 h-8 rounded-lg text-xs font-semibold transition ${
                             page === safeCurrentPage
-                              ? 'bg-[#1d6bf3] text-white shadow-md'
-                              : 'text-gray-600 hover:bg-gray-100'
+                              ? 'bg-blue-600 text-white shadow-md'
+                              : isDarkMode
+                              ? 'text-slate-300 hover:bg-slate-700'
+                              : 'text-slate-700 hover:bg-slate-100'
                           }`}
                         >
                           {page}
@@ -380,7 +456,9 @@ export default function Flights() {
                     <button
                       onClick={() => goToPage(safeCurrentPage + 1)}
                       disabled={safeCurrentPage === totalPages}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition"
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition ${
+                        isDarkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-100'
+                      }`}
                     >
                       Next →
                     </button>

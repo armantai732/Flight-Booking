@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import { ApproveBooking, GetAllBookings } from '../api/api';
+import { toast } from 'react-toastify';
 
 export default function Bookings() {
   const navigate = useNavigate();
@@ -182,7 +183,7 @@ export default function Bookings() {
 
       if (result?.status) {
 
-        alert("Booking Approved Successfully!");
+        toast.success("Booking Approved Successfully!");
 
         // Selected booking ka status immediately update
         setSelectedBooking((prev) => ({
@@ -213,7 +214,7 @@ export default function Bookings() {
         error
       );
 
-      alert(
+      toast.error(
         error.message || "Failed to approve booking"
       );
     }

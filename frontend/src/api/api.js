@@ -1,4 +1,20 @@
-const BASE_URL = 'http://localhost:8080/api'
+const BASE_URL = 'http://localhost:8080/api';
+
+export const SendOTP = async (data) => {
+    try {
+        const res = await fetch(`${BASE_URL}/send-otp`, {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+        });
+        return await res.json();
+    } catch (error) {
+        console.error("Send OTP API Error:", error);
+        throw error;
+    }
+};
 
 export const RegisterData = async (form) => {
     try {
@@ -30,6 +46,22 @@ export const LoginData = async (form) => {
         console.log(error);
     }
 }
+
+export const SocialLoginData = async (payload) => {
+    try {
+        const res = await fetch(`${BASE_URL}/social-login`, {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        });
+        return await res.json();
+    } catch (error) {
+        console.error("Social Login API Error:", error);
+        throw error;
+    }
+};
 
 
 export const GetProfile = async () => {
@@ -349,5 +381,141 @@ export const ApproveBooking = async (bookingId) => {
         console.error("Approve Booking API Error:", error);
 
         throw error;
+    }
+};
+
+export const CreateRazorpayOrder = async (amount) => {
+    try {
+        const token = localStorage.getItem("token");
+
+        const response = await fetch(`${BASE_URL}/create-razorpay-order`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ amount })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || "Failed to create payment order");
+        }
+
+        return result;
+    } catch (error) {
+        console.error("Create Razorpay Order API Error:", error);
+        throw error;
+    }
+};
+
+export const VerifyRazorpayPayment = async (paymentData) => {
+    try {
+        const token = localStorage.getItem("token");
+
+        const response = await fetch(`${BASE_URL}/verify-razorpay-payment`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(paymentData)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || "Payment verification failed");
+        }
+
+        return result;
+    } catch (error) {
+        console.error("Verify Razorpay Payment API Error:", error);
+        throw error;
+    }
+};
+
+
+
+
+
+export const sendContactMessage = async (contactData) => {
+    try {
+        const response = await fetch(`${BASE_URL}/contact`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(contactData),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || "Something went wrong");
+        }
+
+        return data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+export const updateFlight = async (id, flightData) => {
+    try {
+        const response = await fetch(`${BASE_URL}/updateflight/${id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(flightData),
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || "Failed to update flight");
+
+        return data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+export const deleteFlight = async (id) => {
+    try {
+        const response = await fetch(`${BASE_URL}/deleteflight/${id}`, {
+            method: "DELETE",
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || "Failed to delete flight");
+
+        return data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+
+export const GetUser = async () => {
+    try {
+
+        const token = localStorage.getItem("token");
+
+        const res = await fetch(`${BASE_URL}/getuser`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        return await res.json();
+
+    } catch (error) {
+        console.log(error);
     }
 };

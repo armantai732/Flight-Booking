@@ -1,10 +1,11 @@
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { toast } from "react-toastify";
 
 export const downloadTicket = async (element) => {
 
   if (!element) {
-    alert("Ticket not found");
+    toast.error("Ticket not found");
     return;
   }
 
@@ -49,7 +50,7 @@ export const downloadTicket = async (element) => {
 
     console.error("Ticket Download Error:", error);
 
-    alert("Failed to download ticket");
+    toast.error("Failed to download ticket");
 
   }
 };
