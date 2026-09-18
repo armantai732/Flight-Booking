@@ -12,7 +12,7 @@ const app = express();
 app.use(cors({
     origin: [
         "http://localhost:5173",
-        "https://flight-booking-vgm.vercel.app"
+        "https://flight-booking-vgm.vercel.app/api"
     ],
     credentials: true
 }));
