@@ -12,7 +12,7 @@ const app = express();
 app.use(cors({
     origin: [
         "http://localhost:5173",
-        "flight-booking-jlxdlejwm-armantai-s-projects.vercel.app"
+        "flight-booking-eight-delta.vercel.app"
     ],
     credentials: true
 }));
